@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>TCGコレクション</title>
+    <title>TCGコレクション & 買取表</title>
     <style>
         :root { --bg:#090d16; --card-bg:#131b2e; --text:#f1f5f9; --muted:#94a3b8; --accent:#6366f1; --danger:#ef4444; --success:#10b981; --border:#1e293b; }
         * { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; -webkit-tap-highlight-color:transparent; }
@@ -14,6 +14,13 @@
         h1 { font-size:0.95rem; font-weight:bold; }
         .btn { background:var(--accent); color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer; }
         .btn-danger { background:var(--danger); } .btn-success { background:var(--success); }
+        
+        /* タブ切り替えバー */
+        .tab-bar { display:flex; gap:6px; margin-bottom:10px; background:var(--card-bg); padding:6px; border-radius:10px; border:1px solid var(--border); }
+        .tab-btn { flex:1; padding:8px; text-align:center; font-size:0.8rem; font-weight:bold; background:var(--bg); color:var(--muted); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+        .tab-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+        .tab-btn.buy-tab.active { background:#10b981; border-color:#10b981; }
+
         .search-area { background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; }
         .search-area input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; margin-bottom:8px; }
         .filter-row { display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px; }
@@ -63,19 +70,24 @@
             <div style="font-size:0.65rem; color:var(--muted);" id="app-mode">ゲスト閲覧モード</div>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
-            <button class="btn" onclick="document.getElementById('import-file-guest').click()" style="font-size:0.7rem; background:#475569; padding:6px 8px;">📥 データを読込</button>
-            <input type="file" id="import-file-guest" accept=".json" style="display:none" onchange="importData(event)">
+            <button class="btn" onclick="document.getElementById('import-file-input').click()" style="font-size:0.7rem; background:#475569; padding:6px 8px;">📥 読込</button>
+            <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importData(event)">
             
             <button id="auth-btn" class="btn" onclick="toggleAuth()">オーナー認証</button>
         </div>
     </header>
 
+    <!-- タブ切り替えボタン -->
+    <div class="tab-bar">
+        <button id="tab-sell" class="tab-btn active" onclick="switchTab('sell')">🛒 販売品一覧</button>
+        <button id="tab-buy" class="tab-btn buy-tab" onclick="switchTab('buy')">📋 買取表</button>
+    </div>
+
     <div id="owner-share-bar" class="owner-control-bar" style="display:none;">
-        <div class="owner-control-top"><span>📦 オーナー専用 データ管理・共有</span></div>
+        <div class="owner-control-top"><span id="owner-bar-title">📦 オーナー専用 データ管理・共有</span></div>
         <div class="owner-control-btns">
             <button class="btn btn-success" onclick="shareData()" style="font-size:0.7rem; padding:5px 8px;">📤 データをシェア</button>
             <button class="btn" onclick="exportData()" style="font-size:0.7rem; padding:5px 8px; background:#0284c7;">💾 バックアップ保存</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('import-file-guest').click()" style="font-size:0.7rem; padding:5px 8px; background:#475569;">📥 読込</button>
         </div>
     </div>
 
@@ -89,7 +101,7 @@
     </div>
 
     <div id="add-bar" style="margin-bottom:10px; display:none;">
-        <button class="btn" style="width:100%; padding:10px;" onclick="openModal()">＋ カードを追加</button>
+        <button id="add-btn-main" class="btn" style="width:100%; padding:10px;" onclick="openModal()">＋ カードを追加</button>
     </div>
 
     <div class="grid" id="grid"></div>
@@ -107,16 +119,16 @@
             </div>
             <div class="modal-row">
                 <div class="f-group" style="flex:1;"><label>レアリティ</label><input type="text" id="f-rarity" placeholder="例: UR, SAR"></div>
-                <div class="f-group" style="flex:1;"><label>在庫数</label><input type="number" id="f-stock" value="1" min="0"></div>
+                <div class="f-group" style="flex:1;"><label id="f-stock-label">在庫数</label><input type="number" id="f-stock" value="1" min="0"></div>
             </div>
             <div class="modal-row">
-                <div class="f-group" style="flex:1;"><label>販売金額 (円)</label><input type="number" id="f-price" placeholder="例: 5000"></div>
+                <div class="f-group" style="flex:1;"><label id="f-price-label">販売金額 (円)</label><input type="number" id="f-price" placeholder="例: 5000"></div>
                 <div class="f-group" style="flex:1;"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
             </div>
-            <div class="f-group"><label>メモ / 仕入値など (オーナー用)</label><input type="text" id="f-memo" placeholder="例: 仕入値3000円 / 保管棚A"></div>
+            <div class="f-group"><label>メモ (オーナー用)</label><input type="text" id="f-memo" placeholder="仕入値や保管棚など"></div>
             <div class="modal-btns">
                 <button class="cancel-btn" onclick="closeModal()">キャンセル</button>
-                <button class="btn" onclick="saveData()">保存</button>
+                <button id="modal-save-btn" class="btn" onclick="saveData()">保存</button>
             </div>
         </div>
     </div>
@@ -139,94 +151,79 @@
     </div>
 
     <script>
+        let currentTab = 'sell'; // 'sell' or 'buy'
         let isOwner = sessionStorage.getItem('tcg_owner_session') === 'true';
-        let cards = [], currentZoomScale = 1, db;
-        const request = indexedDB.open('TCGCollectionDB', 1);
-        request.onsuccess = e => { db = e.target.result; loadCardsFromDB(); };
-        request.onupgradeneeded = e => { e.target.result.createObjectStore('cards', { keyPath: 'id' }); };
+        let sellCards = [], buyCards = [], currentZoomScale = 1, db;
 
-        function loadCardsFromDB() {
+        const request = indexedDB.open('TCGUnifiedDB', 2);
+        request.onsuccess = e => { db = e.target.result; loadAllData(); };
+        request.onupgradeneeded = e => {
+            const database = e.target.result;
+            if (!database.objectStoreNames.contains('sellCards')) database.createObjectStore('sellCards', { keyPath: 'id' });
+            if (!database.objectStoreNames.contains('buyCards')) database.createObjectStore('buyCards', { keyPath: 'id' });
+        };
+
+        function loadAllData() {
             if (!db) return;
-            const store = db.transaction(['cards'], 'readonly').objectStore('cards');
-            store.getAll().onsuccess = e => { cards = e.target.result || []; init(); };
-        }
-        function saveCardToDB(cardData, cb) {
-            const tx = db.transaction(['cards'], 'readwrite');
-            tx.objectStore('cards').put(cardData);
-            tx.oncomplete = () => { loadCardsFromDB(); if (cb) cb(); };
-        }
-        function deleteCardFromDB(id, cb) {
-            const tx = db.transaction(['cards'], 'readwrite');
-            tx.objectStore('cards').delete(id);
-            tx.oncomplete = () => { loadCardsFromDB(); if (cb) cb(); };
-        }
-        async function shareData() {
-            const file = new File([JSON.stringify(cards)], 'tcg_collection_data.json', { type: 'application/json' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try { await navigator.share({ title: 'TCGコレクションデータ', text: '最新の在庫・カードデータです。', files: [file] }); return; }
-                catch (err) { if (err.name === 'AbortError') return; }
-            }
-            alert('お使いの環境では直接シェアできないため、「バックアップ保存」をご利用ください。');
-        }
-        function exportData() {
-            const a = document.createElement('a');
-            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
-            a.download = "tcg_collection_data.json";
-            document.body.appendChild(a); a.click(); a.remove();
-        }
-        function importData(e) {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = evt => {
-                try {
-                    const importedCards = JSON.parse(evt.target.result);
-                    if (Array.isArray(importedCards)) {
-                        const tx = db.transaction(['cards'], 'readwrite');
-                        const store = tx.objectStore('cards');
-                        store.clear();
-                        importedCards.forEach(c => store.put(c));
-                        tx.oncomplete = () => { loadCardsFromDB(); alert('最新データを読み込みました！'); };
-                    } else alert('形式が正しくありません');
-                } catch(err) { alert('読み込みに失敗しました'); }
+            const tx = db.transaction(['sellCards', 'buyCards'], 'readonly');
+            tx.objectStore('sellCards').getAll().onsuccess = e => {
+                sellCards = e.target.result || [];
+                tx.objectStore('buyCards').getAll().onsuccess = ev => {
+                    buyCards = ev.target.result || [];
+                    init();
+                };
             };
-            reader.readAsText(file);
         }
-        function init() {
-            document.getElementById('app-title').textContent = isOwner ? 'TCGコレクション (オーナー)' : 'TCGコレクション';
-            document.getElementById('app-mode').textContent = isOwner ? 'オーナー編集モード' : 'ゲスト閲覧モード';
-            const authBtn = document.getElementById('auth-btn');
-            authBtn.textContent = isOwner ? 'ログアウト' : 'オーナー認証';
-            authBtn.className = isOwner ? 'btn btn-danger' : 'btn';
-            document.getElementById('add-bar').style.display = isOwner ? 'block' : 'none';
-            document.getElementById('owner-share-bar').style.display = isOwner ? 'flex' : 'none';
-            render();
+
+        function saveCardToDB(storeName, cardData, cb) {
+            const tx = db.transaction([storeName], 'readwrite');
+            tx.objectStore(storeName).put(cardData);
+            tx.oncomplete = () => { loadAllData(); if (cb) cb(); };
         }
-        function toggleAuth() {
-            if (isOwner) { isOwner = false; sessionStorage.removeItem('tcg_owner_session'); init(); }
-            else { document.getElementById('pass-input').value = ''; document.getElementById('auth-modal').style.display = 'flex'; }
+
+        function deleteCardFromDB(storeName, id, cb) {
+            const tx = db.transaction([storeName], 'readwrite');
+            tx.objectStore(storeName).delete(id);
+            tx.oncomplete = () => { loadAllData(); if (cb) cb(); };
         }
-        function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
-        function verifyPass() {
-            if (document.getElementById('pass-input').value === '19951014') {
-                isOwner = true; sessionStorage.setItem('tcg_owner_session', 'true'); closeAuthModal(); init();
-            } else alert('パスワードが違います');
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-sell').className = 'tab-btn' + (tab === 'sell' ? ' active' : '');
+            document.getElementById('tab-buy').className = 'tab-btn buy-tab' + (tab === 'buy' ? ' active' : '');
+            
+            const addBtn = document.getElementById('add-btn-main');
+            if (tab === 'sell') {
+                addBtn.textContent = '＋ 販売カードを追加';
+                addBtn.style.background = 'var(--accent)';
+            } else {
+                addBtn.textContent = '＋ 買取カードを追加';
+                addBtn.style.background = '#10b981';
+            }
+            init();
         }
         function render() {
             const keyword = document.getElementById('search-input').value.toLowerCase();
             const filterTitle = document.getElementById('filter-title').value;
             const sortOrder = document.getElementById('sort-order').value;
             const grid = document.getElementById('grid'); grid.innerHTML = '';
-            let filtered = cards.filter(c => {
+            
+            let activeCards = currentTab === 'sell' ? sellCards : buyCards;
+
+            let filtered = activeCards.filter(c => {
                 const matchKey = (c.name + (c.itemNo||'') + (c.no||'') + (c.rarity||'') + (c.condition||'') + (c.memo||'') + c.title).toLowerCase().includes(keyword);
                 return matchKey && (filterTitle === '' || c.title === filterTitle);
             });
+
             filtered.sort((a, b) => {
                 if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
-                if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(b.price)||0);
+                if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(a.price)||0);
                 if (sortOrder === 'stock-desc') return (Number(b.stock)||0) - (Number(a.stock)||0);
                 return b.id - a.id;
             });
+
             document.getElementById('card-count').textContent = filtered.length + '枚';
+
             filtered.forEach(c => {
                 const div = document.createElement('div'); div.className = 'card';
                 let imgs = c.imgs || (c.img ? [c.img] : []), stockNum = c.stock !== undefined ? Number(c.stock) : 1, imgsHtml = '';
@@ -242,27 +239,56 @@
                     imgsHtml = `<div class="card-img-container" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.7rem;">No Image</div>`;
                 }
 
-                let badgeHtml = stockNum === 0 ? `<div class="sold-badge">SOLD OUT</div>` : `<div class="stock-badge">残り ${stockNum} 個</div>`;
-                
-                // ゲスト・オーナー問わず販売価格を常時表示
-                let priceHtml = c.price ? `<div class="card-price">¥${Number(c.price).toLocaleString()}</div>` : '';
-                
-                // オーナーには仕入値やメモを表示
+                let badgeHtml = '';
+                if (currentTab === 'sell') {
+                    badgeHtml = stockNum === 0 ? `<div class="sold-badge">SOLD OUT</div>` : `<div class="stock-badge">残り ${stockNum} 個</div>`;
+                } else {
+                    badgeHtml = `<div class="buy-badge" style="position:absolute; top:6px; left:6px; background:rgba(16,185,129,0.9); color:white; font-size:0.65rem; font-weight:bold; padding:2px 6px; border-radius:4px; z-index:2;">買取募集 (${stockNum}枚)</div>`;
+                }
+
+                let priceHtml = '';
+                if (currentTab === 'sell') {
+                    priceHtml = c.price ? `<div class="card-price">¥${Number(c.price).toLocaleString()}</div>` : '';
+                } else {
+                    priceHtml = c.price ? `<div class="card-price" style="color:#38bdf8;">買取 ¥${Number(c.price).toLocaleString()}</div>` : '';
+                }
+
                 let memoHtml = (isOwner && c.memo) ? `<div style="font-size:0.65rem;color:#fbbf24;margin-bottom:4px;">📝 ${escapeHtml(c.memo)}</div>` : '';
                 let subText = []; if (c.itemNo) subText.push(`No: ${escapeHtml(c.itemNo)}`); if (c.no) subText.push(`型番: ${escapeHtml(c.no)}`); if (c.rarity) subText.push(escapeHtml(c.rarity));
-                div.innerHTML = `${badgeHtml}${imgsHtml}<div class="card-body"><div><span class="card-tag">${c.title}</span><div class="card-title">${escapeHtml(c.name)}</div><div class="card-sub">${subText.join(' / ')}</div><div class="card-sub">${escapeHtml(c.condition || '')}</div>${priceHtml}${memoHtml}</div><div>${stockNum > 0 ? `<button class="buy-btn" onclick="inquireCard(${c.id})">💬 問い合わせ・購入</button>` : `<button class="buy-btn" style="background:var(--border);color:var(--muted);cursor:not-allowed;" disabled>売り切れ</button>`}${isOwner ? `<div class="card-actions"><button class="edit-btn" onclick="openModal(${c.id})">編集</button><button class="del-btn" onclick="delCard(${c.id})">削除</button></div>` : ''}</div></div>`;
+
+                let actionBtnHtml = '';
+                if (currentTab === 'sell') {
+                    actionBtnHtml = stockNum > 0 ? `<button class="buy-btn" onclick="inquireCard(${c.id})">💬 問い合わせ・購入</button>` : `<button class="buy-btn" style="background:var(--border);color:var(--muted);cursor:not-allowed;" disabled>売り切れ</button>`;
+                } else {
+                    actionBtnHtml = `<button class="buy-btn" style="background:#10b981;" onclick="inquireBuy(${c.id})">💬 買取を問い合わせ</button>`;
+                }
+
+                let ownerActionsHtml = isOwner ? `<div class="card-actions"><button class="edit-btn" onclick="openModal(${c.id})">編集</button><button class="del-btn" onclick="delCard(${c.id})">削除</button></div>` : '';
+
+                div.innerHTML = `${badgeHtml}${imgsHtml}<div class="card-body"><div><span class="card-tag">${c.title}</span><div class="card-title">${escapeHtml(c.name)}</div><div class="card-sub">${subText.join(' / ')}</div><div class="card-sub">${escapeHtml(c.condition || '')}</div>${priceHtml}${memoHtml}</div><div>${actionBtnHtml}${ownerActionsHtml}</div></div>`;
                 grid.appendChild(div);
             });
         }
+
         function inquireCard(id) {
-            const c = cards.find(x => x.id === id); if (!c) return;
+            const c = sellCards.find(x => x.id === id); if (!c) return;
             prompt("メッセージをコピーしてLINE等に送信してください：", `【購入希望】${c.name} (商品番号: ${c.itemNo || '-'} / 型番: ${c.no || '-'})`);
         }
+
+        function inquireBuy(id) {
+            const c = buyCards.find(x => x.id === id); if (!c) return;
+            prompt("メッセージをコピーしてLINE等に送信してください：", `【買取希望】${c.name} (商品番号: ${c.itemNo || '-'} / 型番: ${c.no || '-'}) を買い取ってほしいです。`);
+        }
+
         function openModal(id = null) {
             document.getElementById('edit-id').value = id || '';
+            const activeCards = currentTab === 'sell' ? sellCards : buyCards;
+            document.getElementById('modal-title').textContent = (currentTab === 'sell' ? '販売カード' : '買取カード') + (id ? '編集' : '追加');
+            document.getElementById('f-stock-label').textContent = currentTab === 'sell' ? '在庫数' : '募集数 (枚数)';
+            document.getElementById('f-price-label').textContent = currentTab === 'sell' ? '販売金額 (円)' : '買取金額 (円)';
+            
             if (id) {
-                const c = cards.find(x => x.id === id);
-                document.getElementById('modal-title').textContent = 'カード編集';
+                const c = activeCards.find(x => x.id === id);
                 document.getElementById('f-title').value = c.title; document.getElementById('f-name').value = c.name;
                 document.getElementById('f-itemno').value = c.itemNo || ''; document.getElementById('f-no').value = c.no || '';
                 document.getElementById('f-rarity').value = c.rarity || ''; document.getElementById('f-price').value = c.price || '';
@@ -270,7 +296,6 @@
                 document.getElementById('f-condition').value = c.condition || ''; document.getElementById('f-memo').value = c.memo || '';
                 document.getElementById('f-img').value = '';
             } else {
-                document.getElementById('modal-title').textContent = 'カード追加';
                 document.getElementById('f-title').value = '遊戯王'; document.getElementById('f-name').value = '';
                 document.getElementById('f-itemno').value = ''; document.getElementById('f-no').value = '';
                 document.getElementById('f-rarity').value = ''; document.getElementById('f-price').value = '';
@@ -279,29 +304,37 @@
             }
             document.getElementById('item-modal').style.display = 'flex';
         }
+
         function closeModal() { document.getElementById('item-modal').style.display = 'none'; }
+
         function saveData() {
             const idVal = document.getElementById('edit-id').value, title = document.getElementById('f-title').value, name = document.getElementById('f-name').value;
             const itemNo = document.getElementById('f-itemno').value, no = document.getElementById('f-no').value, rarity = document.getElementById('f-rarity').value;
             const price = document.getElementById('f-price').value, stock = document.getElementById('f-stock').value, condition = document.getElementById('f-condition').value;
             const memo = document.getElementById('f-memo').value, imgInput = document.getElementById('f-img');
+            
             if (!name) { alert('カード名を入力してください'); return; }
+            const storeName = currentTab === 'sell' ? 'sellCards' : 'buyCards';
+            const activeCards = currentTab === 'sell' ? sellCards : buyCards;
             const files = Array.from(imgInput.files).slice(0, 10), cardId = idVal ? Number(idVal) : Date.now();
+
             if (idVal) {
-                const existing = cards.find(x => x.id === cardId);
+                const existing = activeCards.find(x => x.id === cardId);
                 let currentImgs = existing ? (existing.imgs || (existing.img ? [existing.img] : [])) : [];
                 if (files.length > 0) {
-                    processImages(files, 0, [], newImgs => { saveCardToDB({ id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => { closeModal(); render(); }); });
-                } else { saveCardToDB({ id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: currentImgs }, () => { closeModal(); render(); }); }
+                    processImages(files, 0, [], newImgs => { saveCardToDB(storeName, { id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => { closeModal(); }); });
+                } else { saveCardToDB(storeName, { id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: currentImgs }, () => { closeModal(); }); }
             } else {
                 if (files.length === 0) { alert('画像を少なくとも1枚選択してください'); return; }
-                processImages(files, 0, [], newImgs => { saveCardToDB({ id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => { closeModal(); render(); }); });
+                processImages(files, 0, [], newImgs => { saveCardToDB(storeName, { id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => { closeModal(); }); });
             }
         }
+
         function processImages(files, index, acc, cb) {
             if (index >= files.length) { cb(acc); return; }
             compressImage(files[index], base64 => { acc.push(base64); processImages(files, index + 1, acc, cb); });
         }
+
         function compressImage(file, cb) {
             const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = e => {
@@ -317,9 +350,91 @@
                 };
             };
         }
-        function delCard(id) { if (confirm('本当に削除しますか？')) deleteCardFromDB(id, () => render()); }
+
+        function delCard(id) {
+            if (confirm('本当に削除しますか？')) {
+                const storeName = currentTab === 'sell' ? 'sellCards' : 'buyCards';
+                deleteCardFromDB(storeName, id);
+            }
+        }
+
+        async function shareData() {
+            const allData = { sellCards, buyCards };
+            const file = new File([JSON.stringify(allData)], 'tcg_unified_data.json', { type: 'application/json' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try { await navigator.share({ title: 'TCGコレクション＆買取データ', text: '最新のデータです。', files: [file] }); return; }
+                catch (err) { if (err.name === 'AbortError') return; }
+            }
+            exportData();
+        }
+
+        function exportData() {
+            const allData = { sellCards, buyCards };
+            const a = document.createElement('a');
+            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allData));
+            a.download = "tcg_unified_data.json";
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+
+        function importData(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = evt => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    const tx = db.transaction(['sellCards', 'buyCards'], 'readwrite');
+                    
+                    if (Array.isArray(data)) {
+                        // 旧形式（販売データのみの場合）の互換対応
+                        const store = tx.objectStore('sellCards');
+                        store.clear();
+                        data.forEach(c => store.put(c));
+                    } else if (data.sellCards || data.buyCards) {
+                        if (data.sellCards) {
+                            const sStore = tx.objectStore('sellCards');
+                            sStore.clear();
+                            data.sellCards.forEach(c => sStore.put(c));
+                        }
+                        if (data.buyCards) {
+                            const bStore = tx.objectStore('buyCards');
+                            bStore.clear();
+                            data.buyCards.forEach(c => bStore.put(c));
+                        }
+                    }
+                    tx.oncomplete = () => { loadAllData(); alert('データを正常に読み込みました！'); };
+                } catch(err) { alert('読み込みに失敗しました'); }
+            };
+            reader.readAsText(file);
+        }
+
+        function init() {
+            const isSell = currentTab === 'sell';
+            document.getElementById('app-title').textContent = isOwner ? (isSell ? 'TCGコレクション (販売オーナー)' : 'TCG買取表 (買取オーナー)') : (isSell ? 'TCGコレクション' : 'TCG買取表');
+            document.getElementById('app-mode').textContent = isOwner ? 'オーナー編集モード' : 'ゲスト閲覧モード';
+            document.getElementById('owner-bar-title').textContent = isSell ? '📦 販売データ管理・共有' : '📦 買取データ管理・共有';
+            
+            const authBtn = document.getElementById('auth-btn');
+            authBtn.textContent = isOwner ? 'ログアウト' : 'オーナー認証';
+            authBtn.className = isOwner ? 'btn btn-danger' : 'btn';
+            document.getElementById('add-bar').style.display = isOwner ? 'block' : 'none';
+            document.getElementById('owner-share-bar').style.display = isOwner ? 'flex' : 'none';
+            render();
+        }
+
+        function toggleAuth() {
+            if (isOwner) { isOwner = false; sessionStorage.removeItem('tcg_owner_session'); init(); }
+            else { document.getElementById('pass-input').value = ''; document.getElementById('auth-modal').style.display = 'flex'; }
+        }
+        function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+        function verifyPass() {
+            if (document.getElementById('pass-input').value === '19951014') {
+                isOwner = true; sessionStorage.setItem('tcg_owner_session', 'true'); closeAuthModal(); init();
+            } else alert('パスワードが違います');
+        }
+
         function openZoom(cardId, imgIndex) {
-            const c = cards.find(x => x.id === cardId); if (!c) return;
+            const activeCards = currentTab === 'sell' ? sellCards : buyCards;
+            const c = activeCards.find(x => x.id === cardId); if (!c) return;
             const imgs = c.imgs || (c.img ? [c.img] : []), zoomImg = document.getElementById('zoom-img'), zoomThumbs = document.getElementById('zoom-thumbs');
             currentZoomScale = 1; zoomImg.style.transform = 'scale(1)'; zoomImg.src = imgs[imgIndex] || ''; zoomThumbs.innerHTML = '';
             imgs.forEach((src, idx) => {

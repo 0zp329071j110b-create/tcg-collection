@@ -68,9 +68,9 @@
             <div style="font-size:0.65rem; color:var(--muted);" id="app-mode">ゲスト閲覧モード</div>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
-            <!-- お客さん（ゲスト）側でも使えるデータ読込ボタン -->
-            <button class="btn" onclick="document.getElementById('import-file').click()" style="font-size:0.7rem; background:#475569; padding:6px 8px;">📥 データを読込</button>
-            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+            <!-- ゲスト（お客さん）側専用の読込ボタン -->
+            <button class="btn" onclick="document.getElementById('import-file-guest').click()" style="font-size:0.7rem; background:#475569; padding:6px 8px;">📥 データを読込</button>
+            <input type="file" id="import-file-guest" accept=".json" style="display:none" onchange="importData(event)">
             
             <button id="auth-btn" class="btn" onclick="toggleAuth()">オーナー認証</button>
         </div>
@@ -82,7 +82,7 @@
         <div class="owner-control-btns">
             <button class="btn btn-success" onclick="shareData()" style="font-size:0.7rem; padding:5px 8px;">📤 データをシェア</button>
             <button class="btn" onclick="exportData()" style="font-size:0.7rem; padding:5px 8px; background:#0284c7;">💾 バックアップ保存</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="font-size:0.7rem; padding:5px 8px; background:#475569;">📥 読込</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('import-file-guest').click()" style="font-size:0.7rem; padding:5px 8px; background:#475569;">📥 読込</button>
         </div>
     </div>
 

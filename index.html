@@ -21,7 +21,6 @@
         body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 12px; padding-top: env(safe-area-inset-top, 12px); }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px 12px; background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); }
         h1 { font-size: 0.95rem; font-weight: bold; }
-        .header-btns { display: flex; gap: 6px; }
         .btn { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
         .btn-danger { background: var(--danger); }
         .btn-success { background: var(--success); }
@@ -31,7 +30,6 @@
         .filter-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--muted); flex-wrap: wrap; gap: 6px; }
         .filter-row select { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 4px 6px; border-radius: 4px; font-size: 0.75rem; }
 
-        /* オーナー用データ管理バー */
         .owner-control-bar { background: #1e293b; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; gap: 6px; align-items: center; justify-content: space-between; }
         .owner-control-bar span { font-size: 0.75rem; color: #fbbf24; font-weight: bold; }
 
@@ -46,7 +44,7 @@
         .card-img-container.count-n { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .card-img-container img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; background: #000; }
         
-        .more-img-overlay { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 0.65rem; padding: 2px 6px; border-top-left-radius: 6px; font-weight: bold; }
+        .more-img-overlay { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.75); color: white; font-size: 0.65rem; padding: 2px 6px; border-top-left-radius: 6px; font-weight: bold; }
 
         .sold-badge { position: absolute; top: 6px; left: 6px; background: rgba(239, 68, 68, 0.9); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; z-index: 2; }
         .stock-badge { position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.85); color: #38bdf8; border: 1px solid #0284c7; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; z-index: 2; }
@@ -92,7 +90,6 @@
         <button id="auth-btn" class="btn" onclick="toggleAuth()">オーナー認証</button>
     </header>
 
-    <!-- オーナーログイン時だけ表示されるデータ共有・バックアップバー -->
     <div id="owner-share-bar" class="owner-control-bar" style="display: none;">
         <span>📦 データ共有・管理</span>
         <div style="display:flex; gap:4px;">
@@ -103,7 +100,7 @@
     </div>
 
     <div class="search-area">
-        <input type="text" id="search-input" placeholder="カード名、No.、メモで検索..." oninput="render()">
+        <input type="text" id="search-input" placeholder="カード名、商品番号、型番、メモで検索..." oninput="render()">
         <div class="filter-row">
             <div>
                 タイトル: 
@@ -137,19 +134,23 @@
             <div class="f-group">
                 <label>カード画像 (最大10枚まで選択可)</label>
                 <input type="file" id="f-img" accept="image/*" multiple>
+                <div style="font-size: 0.65rem; color: var(--muted); margin-top: 2px;">※大容量DB対応。最大10枚まで自動圧縮保存されます</div>
             </div>
             <div class="f-group"><label>タイトル</label><select id="f-title"><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
             <div class="f-group"><label>カード名</label><input type="text" id="f-name" placeholder="例: 青眼の白龍"></div>
             <div class="modal-row">
-                <div class="f-group" style="flex:1;"><label>型番 / No.</label><input type="text" id="f-no" placeholder="例: 001/050"></div>
+                <div class="f-group" style="flex:1;"><label>商品番号</label><input type="text" id="f-itemno" placeholder="例: A-001"></div>
+                <div class="f-group" style="flex:1;"><label>型番 / No.</label><input type="text" id="f-no" placeholder="例: QCC1-JP001"></div>
+            </div>
+            <div class="modal-row">
                 <div class="f-group" style="flex:1;"><label>レアリティ</label><input type="text" id="f-rarity" placeholder="例: UR, SAR"></div>
+                <div class="f-group" style="flex:1;"><label>在庫数 (個/枚)</label><input type="number" id="f-stock" value="1" min="0" placeholder="1"></div>
             </div>
             <div class="modal-row">
                 <div class="f-group" style="flex:1;"><label>金額 (円)</label><input type="number" id="f-price" placeholder="例: 5000"></div>
-                <div class="f-group" style="flex:1;"><label>在庫数 (個/枚)</label><input type="number" id="f-stock" value="1" min="0" placeholder="1"></div>
+                <div class="f-group" style="flex:1;"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
             </div>
-            <div class="f-group"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
-            <div class="f-group"><label>メモ (オーナー確認用)</label><input type="text" id="f-memo" placeholder="例: 仕入値や保管場所など"></div>
+            <div class="f-group"><label>メモ (オーナー確認用)</label><input type="text" id="f-memo" placeholder="例: 仕入値や保管棚など"></div>
             <div class="modal-btns">
                 <button class="cancel-btn" onclick="closeModal()">キャンセル</button>
                 <button class="btn" onclick="saveData()">保存</button>
@@ -226,7 +227,6 @@
             };
         }
 
-        // データをファイルとして書き出し（シェア用）
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
             const downloadAnchor = document.createElement('a');
@@ -237,7 +237,6 @@
             downloadAnchor.remove();
         }
 
-        // データを読み込み（お客さんが受け取ったファイルを反映用）
         function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -248,12 +247,11 @@
                     if (Array.isArray(importedCards)) {
                         const transaction = db.transaction(['cards'], 'readwrite');
                         const store = transaction.objectStore('cards');
-                        // 全てクリアしてインポートデータを反映
                         store.clear();
                         importedCards.forEach(c => store.put(c));
                         transaction.oncomplete = () => {
                             loadCardsFromDB();
-                            alert('データを正常に読み込みました！');
+                            alert('最新のカードデータを正常に読み込みました！');
                         };
                     } else {
                         alert('ファイル形式が正しくありません');
@@ -306,7 +304,7 @@
             grid.innerHTML = '';
 
             let filtered = cards.filter(c => {
-                const matchKey = (c.name + (c.no||'') + (c.rarity||'') + (c.condition||'') + (c.memo||'') + c.title).toLowerCase().includes(keyword);
+                const matchKey = (c.name + (c.itemNo||'') + (c.no||'') + (c.rarity||'') + (c.condition||'') + (c.memo||'') + c.title).toLowerCase().includes(keyword);
                 const matchTitle = filterTitle === '' || c.title === filterTitle;
                 return matchKey && matchTitle;
             });
@@ -351,10 +349,14 @@
                 }
 
                 let priceHtml = isOwner ? 
-                    (c.price ? `<div class="card-price">¥${Number(c.price).toLocaleString()}</div>` : '<div class="card-price" style="color:var(--muted);">-</div>') : 
-                    `<div class="card-price" style="color:var(--muted);">価格: お問い合わせ</div>`;
+                    (c.price ? `<div class="card-price">¥${Number(c.price).toLocaleString()}</div>` : '<div class="card-price" style="color:var(--muted);">-</div>') : '';
 
                 let memoHtml = (isOwner && c.memo) ? `<div style="font-size:0.65rem;color:#fbbf24;margin-bottom:4px;">📝 ${escapeHtml(c.memo)}</div>` : '';
+
+                let subText = [];
+                if (c.itemNo) subText.push(`No: ${escapeHtml(c.itemNo)}`);
+                if (c.no) subText.push(`型番: ${escapeHtml(c.no)}`);
+                if (c.rarity) subText.push(escapeHtml(c.rarity));
 
                 div.innerHTML = `
                     ${badgeHtml}
@@ -363,7 +365,7 @@
                         <div>
                             <span class="card-tag">${c.title}</span>
                             <div class="card-title">${escapeHtml(c.name)}</div>
-                            <div class="card-sub">${escapeHtml(c.no || '')} ${escapeHtml(c.rarity ? ' / ' + c.rarity : '')}</div>
+                            <div class="card-sub">${subText.join(' / ')}</div>
                             <div class="card-sub">${escapeHtml(c.condition || '')}</div>
                             ${priceHtml}
                             ${memoHtml}
@@ -386,7 +388,7 @@
         function inquireCard(id) {
             const c = cards.find(x => x.id === id);
             if (!c) return;
-            prompt("以下のメッセージをコピーしてLINEやDMに送信してください：", `【購入希望】${c.name} (No: ${c.no || '-'})`);
+            prompt("以下のメッセージをコピーしてLINEやDMに送信してください：", `【購入希望】${c.name} (商品番号: ${c.itemNo || '-'} / 型番: ${c.no || '-'})`);
         }
 
         function openModal(id = null) {
@@ -396,6 +398,7 @@
                 document.getElementById('modal-title').textContent = 'カード編集';
                 document.getElementById('f-title').value = c.title;
                 document.getElementById('f-name').value = c.name;
+                document.getElementById('f-itemno').value = c.itemNo || '';
                 document.getElementById('f-no').value = c.no || '';
                 document.getElementById('f-rarity').value = c.rarity || '';
                 document.getElementById('f-price').value = c.price || '';
@@ -407,6 +410,7 @@
                 document.getElementById('modal-title').textContent = 'カード追加';
                 document.getElementById('f-title').value = '遊戯王';
                 document.getElementById('f-name').value = '';
+                document.getElementById('f-itemno').value = '';
                 document.getElementById('f-no').value = '';
                 document.getElementById('f-rarity').value = '';
                 document.getElementById('f-price').value = '';
@@ -423,6 +427,7 @@
             const idVal = document.getElementById('edit-id').value;
             const title = document.getElementById('f-title').value;
             const name = document.getElementById('f-name').value;
+            const itemNo = document.getElementById('f-itemno').value;
             const no = document.getElementById('f-no').value;
             const rarity = document.getElementById('f-rarity').value;
             const price = document.getElementById('f-price').value;
@@ -442,13 +447,13 @@
 
                 if (files.length > 0) {
                     processImages(files, 0, [], newImgs => {
-                        saveCardToDB({ id: cardId, title, name, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => {
+                        saveCardToDB({ id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => {
                             closeModal();
                             render();
                         });
                     });
                 } else {
-                    saveCardToDB({ id: cardId, title, name, no, rarity, price, stock, condition, memo, imgs: currentImgs }, () => {
+                    saveCardToDB({ id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: currentImgs }, () => {
                         closeModal();
                         render();
                     });
@@ -456,7 +461,7 @@
             } else {
                 if (files.length === 0) { alert('画像を少なくとも1枚選択してください'); return; }
                 processImages(files, 0, [], newImgs => {
-                    saveCardToDB({ id: cardId, title, name, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => {
+                    saveCardToDB({ id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => {
                         closeModal();
                         render();
                     });

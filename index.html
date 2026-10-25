@@ -167,7 +167,7 @@
                 try { await navigator.share({ title: 'TCGコレクションデータ', text: '最新の在庫・カードデータです。', files: [file] }); return; }
                 catch (err) { if (err.name === 'AbortError') return; }
             }
-            alert('直接シェアできないため、「バックアップ保存」からファイルを保存して送信してください。');
+            alert('お使いの環境では直接シェアできないため、「バックアップ保存」をご利用ください。');
         }
         function exportData() {
             const a = document.createElement('a');
@@ -221,7 +221,6 @@
                 const matchKey = (c.name + (c.itemNo||'') + (c.no||'') + (c.rarity||'') + (c.condition||'') + (c.memo||'') + c.title).toLowerCase().includes(keyword);
                 return matchKey && (filterTitle === '' || c.title === filterTitle);
             });
-            filtered.
             filtered.sort((a, b) => {
                 if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
                 if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(b.price)||0);
@@ -328,3 +327,6 @@
         }
         function closeZoom() { document.getElementById('zoom-modal').style.display = 'none'; }
         function escapeHtml(str) { return (str || '').replace(/[&'`<>]/g, m => ({ '&': '&amp;', "'": '&#x27;', '`': '&#x60;', '<': '&lt;', '>': '&gt;' }[m])); }
+    </script>
+</body>
+</html>

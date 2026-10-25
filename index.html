@@ -14,24 +14,27 @@
             --muted: #94a3b8;
             --accent: #6366f1;
             --danger: #ef4444;
+            --success: #10b981;
             --border: #1e293b;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 12px; padding-top: env(safe-area-inset-top, 12px); }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px 12px; background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); }
         h1 { font-size: 0.95rem; font-weight: bold; }
-        .btn { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+        .header-btns { display: flex; gap: 6px; }
+        .btn { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
         .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #334155; }
         
         .search-area { background: var(--card-bg); padding: 10px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 10px; }
         .search-area input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.85rem; margin-bottom: 8px; }
-        .filter-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--muted); }
-        .filter-row select { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 4px 6px; border-radius: 4px; }
+        .filter-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--muted); flex-wrap: wrap; gap: 6px; }
+        .filter-row select { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 4px 6px; border-radius: 4px; font-size: 0.75rem; }
 
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .card { background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: flex; flex-direction: column; }
+        .card { background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: flex; flex-direction: column; position: relative; }
         
-        /* 複数画像サムネイル用レイアウト */
+        /* 複数画像サムネイル */
         .card-img-container { width: 100%; height: 140px; background: #000; position: relative; display: grid; gap: 1px; }
         .card-img-container.count-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
         .card-img-container.count-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
@@ -40,12 +43,17 @@
         .card-img-container.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .card-img-container img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; background: #000; }
 
+        /* バッジ（SOLD OUT & 在庫数） */
+        .sold-badge { position: absolute; top: 6px; left: 6px; background: rgba(239, 68, 68, 0.9); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; z-index: 2; }
+        .stock-badge { position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.85); color: #38bdf8; border: 1px solid #0284c7; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; z-index: 2; }
+
         .card-body { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .card-tag { font-size: 0.6rem; background: #1e293b; color: var(--muted); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
         .card-title { font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
         .card-sub { font-size: 0.7rem; color: var(--muted); margin-bottom: 2px; }
-        .card-price { font-size: 0.75rem; color: #34d399; font-weight: bold; margin-bottom: 6px; }
-        .card-actions { display: flex; gap: 6px; }
+        .card-price { font-size: 0.8rem; color: #34d399; font-weight: bold; margin-bottom: 6px; }
+        .buy-btn { width: 100%; padding: 5px; font-size: 0.7rem; background: #2563eb; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 4px; }
+        .card-actions { display: flex; gap: 6px; margin-top: 6px; }
         .card-actions button { flex: 1; padding: 4px; font-size: 0.7rem; border-radius: 4px; border: none; cursor: pointer; color: white; font-weight: bold; }
         .edit-btn { background: #3b82f6; }
         .del-btn { background: var(--danger); }
@@ -61,7 +69,7 @@
         .modal-btns button { flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
         .cancel-btn { background: var(--border); color: var(--text); }
         
-        /* ズームモーダル（複数画像スライド用） */
+        /* ズームモーダル */
         #zoom-modal { flex-direction: column; }
         .zoom-container { max-width: 100%; max-height: 75vh; display: flex; justify-content: center; align-items: center; }
         #zoom-img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; }
@@ -77,13 +85,30 @@
             <h1 id="app-title">TCGコレクション</h1>
             <div style="font-size: 0.65rem; color: var(--muted);" id="app-mode">ゲスト閲覧モード</div>
         </div>
-        <button id="auth-btn" class="btn" onclick="toggleAuth()">オーナー認証</button>
+        <div class="header-btns">
+            <button class="btn btn-secondary" onclick="togglePriceHide()" id="hide-btn">👁️ 価格表示</button>
+            <button id="auth-btn" class="btn" onclick="toggleAuth()">オーナー認証</button>
+        </div>
     </header>
 
     <div class="search-area">
         <input type="text" id="search-input" placeholder="カード名、No.、メモで検索..." oninput="render()">
         <div class="filter-row">
-            <div>タイトル: <select id="filter-title" onchange="render()"><option value="">すべて</option><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
+            <div>
+                タイトル: 
+                <select id="filter-title" onchange="render()">
+                    <option value="">すべて</option><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option>
+                </select>
+            </div>
+            <div>
+                順序: 
+                <select id="sort-order" onchange="render()">
+                    <option value="new">新しい順</option>
+                    <option value="price-desc">価格が高い順</option>
+                    <option value="price-asc">価格が安い順</option>
+                    <option value="stock-desc">在庫が多い順</option>
+                </select>
+            </div>
             <div id="card-count">0枚</div>
         </div>
     </div>
@@ -101,7 +126,6 @@
             <div class="f-group">
                 <label>カード画像 (最大4枚まで選択可)</label>
                 <input type="file" id="f-img" accept="image/*" multiple>
-                <div style="font-size: 0.65rem; color: var(--muted); margin-top: 2px;">※複数選択または追加で最大4枚まで登録できます</div>
             </div>
             <div class="f-group"><label>タイトル</label><select id="f-title"><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
             <div class="f-group"><label>カード名</label><input type="text" id="f-name" placeholder="例: 青眼の白龍"></div>
@@ -111,9 +135,10 @@
             </div>
             <div class="modal-row">
                 <div class="f-group" style="flex:1;"><label>金額 (円)</label><input type="number" id="f-price" placeholder="例: 5000"></div>
-                <div class="f-group" style="flex:1;"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
+                <div class="f-group" style="flex:1;"><label>在庫数 (個/枚)</label><input type="number" id="f-stock" value="1" min="0" placeholder="1"></div>
             </div>
-            <div class="f-group"><label>メモ</label><input type="text" id="f-memo" placeholder="例: ローダー保管など"></div>
+            <div class="f-group"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
+            <div class="f-group"><label>メモ (非表示モードで隠せます)</label><input type="text" id="f-memo" placeholder="例: 保管場所など"></div>
             <div class="modal-btns">
                 <button class="cancel-btn" onclick="closeModal()">キャンセル</button>
                 <button class="btn" onclick="saveData()">保存</button>
@@ -142,8 +167,8 @@
 
     <script>
         let isOwner = false;
-        // バージョンアップに伴いストレージキーを v6 に更新
-        let cards = JSON.parse(localStorage.getItem('tcg_data_v6') || '[]');
+        let hidePrice = false;
+        let cards = JSON.parse(localStorage.getItem('tcg_data_v7') || '[]');
 
         function init() {
             document.getElementById('app-title').textContent = isOwner ? 'TCGコレクション (オーナー)' : 'TCGコレクション';
@@ -152,6 +177,12 @@
             authBtn.textContent = isOwner ? 'ログアウト' : 'オーナー認証';
             authBtn.className = isOwner ? 'btn btn-danger' : 'btn';
             document.getElementById('add-bar').style.display = isOwner ? 'block' : 'none';
+            render();
+        }
+
+        function togglePriceHide() {
+            hidePrice = !hidePrice;
+            document.getElementById('hide-btn').textContent = hidePrice ? '🙈 隠し中' : '👁️ 価格表示';
             render();
         }
 
@@ -178,13 +209,22 @@
         function render() {
             const keyword = document.getElementById('search-input').value.toLowerCase();
             const filterTitle = document.getElementById('filter-title').value;
+            const sortOrder = document.getElementById('sort-order').value;
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
 
-            const filtered = cards.filter(c => {
+            let filtered = cards.filter(c => {
                 const matchKey = (c.name + (c.no||'') + (c.rarity||'') + (c.condition||'') + (c.memo||'') + c.title).toLowerCase().includes(keyword);
                 const matchTitle = filterTitle === '' || c.title === filterTitle;
                 return matchKey && matchTitle;
+            });
+
+            // ソート処理
+            filtered.sort((a, b) => {
+                if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
+                if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(b.price)||0);
+                if (sortOrder === 'stock-desc') return (Number(b.stock)||0) - (Number(a.stock)||0);
+                return b.id - a.id; // 新しい順
             });
 
             document.getElementById('card-count').textContent = filtered.length + '枚';
@@ -193,9 +233,9 @@
                 const div = document.createElement('div');
                 div.className = 'card';
                 
-                // 画像配列の安全な取得（旧v5データとの互換性対応含む）
                 let imgs = c.imgs || (c.img ? [c.img] : []);
                 let countClass = 'count-' + Math.min(imgs.length, 4);
+                let stockNum = c.stock !== undefined ? Number(c.stock) : 1;
                 
                 let imgsHtml = '';
                 if (imgs.length > 0) {
@@ -208,7 +248,16 @@
                     imgsHtml = `<div class="card-img-container count-1" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.7rem;">No Image</div>`;
                 }
 
+                // 在庫・SOLDバッジ
+                let badgeHtml = '';
+                if (stockNum === 0) {
+                    badgeHtml += `<div class="sold-badge">SOLD OUT</div>`;
+                } else {
+                    badgeHtml += `<div class="stock-badge">残り ${stockNum} 個</div>`;
+                }
+
                 div.innerHTML = `
+                    ${badgeHtml}
                     ${imgsHtml}
                     <div class="card-body">
                         <div>
@@ -216,18 +265,32 @@
                             <div class="card-title">${escapeHtml(c.name)}</div>
                             <div class="card-sub">${escapeHtml(c.no || '')} ${escapeHtml(c.rarity ? ' / ' + c.rarity : '')}</div>
                             <div class="card-sub">${escapeHtml(c.condition || '')}</div>
-                            ${c.price ? `<div class="card-price">¥${Number(c.price).toLocaleString()}</div>` : '<div class="card-price" style="color:var(--muted);">-</div>'}
+                            ${!hidePrice ? (c.price ? `<div class="card-price">¥${Number(c.price).toLocaleString()}</div>` : '<div class="card-price" style="color:var(--muted);">-</div>') : '<div class="card-price" style="color:var(--muted);">***</div>'}
+                            ${isOwner && c.memo && !hidePrice ? `<div style="font-size:0.65rem;color:#fbbf24;margin-bottom:4px;">📝 ${escapeHtml(c.memo)}</div>` : ''}
                         </div>
-                        ${isOwner ? `
-                            <div class="card-actions" style="margin-top:6px;">
-                                <button class="edit-btn" onclick="openModal(${c.id})">編集</button>
-                                <button class="del-btn" onclick="delCard(${c.id})">削除</button>
-                            </div>
-                        ` : ''}
+                        <div>
+                            ${stockNum > 0 ? `<button class="buy-btn" onclick="inquireCard(${c.id})">💬 問い合わせ・購入</button>` : `<button class="buy-btn" style="background:var(--border);color:var(--muted);cursor:not-allowed;" disabled>売り切れ</button>`}
+                            ${isOwner ? `
+                                <div class="card-actions">
+                                    <button class="edit-btn" onclick="openModal(${c.id})">編集</button>
+                                    <button class="del-btn" onclick="delCard(${c.id})">削除</button>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 `;
                 grid.appendChild(div);
             });
+        }
+
+        function inquireCard(id) {
+            const c = cards.find(x => x.id === id);
+            if (!c) return;
+            const text = encodeURIComponent(`【購入・問い合わせ】\n商品名: ${c.name}\n型番: ${c.no || 'なし'}\n価格: ¥${c.price ? Number(c.price).toLocaleString() : '応相談'}\nの状態について購入希望です。`);
+            // クリック時にメッセージ案を提示してコピー／送信できるようにする
+            if (confirm(`「${c.name}」の購入問い合わせを作成しますか？`)) {
+                prompt("以下のメッセージをコピーしてLINEやDMに送信してください：", `【購入希望】${c.name} (No: ${c.no || '-'}) 価格: ¥${c.price || '-'}`);
+            }
         }
 
         function openModal(id = null) {
@@ -240,6 +303,7 @@
                 document.getElementById('f-no').value = c.no || '';
                 document.getElementById('f-rarity').value = c.rarity || '';
                 document.getElementById('f-price').value = c.price || '';
+                document.getElementById('f-stock').value = c.stock !== undefined ? c.stock : 1;
                 document.getElementById('f-condition').value = c.condition || '';
                 document.getElementById('f-memo').value = c.memo || '';
                 document.getElementById('f-img').value = '';
@@ -250,6 +314,7 @@
                 document.getElementById('f-no').value = '';
                 document.getElementById('f-rarity').value = '';
                 document.getElementById('f-price').value = '';
+                document.getElementById('f-stock').value = '1';
                 document.getElementById('f-condition').value = '';
                 document.getElementById('f-memo').value = '';
                 document.getElementById('f-img').value = '';
@@ -265,6 +330,7 @@
             const no = document.getElementById('f-no').value;
             const rarity = document.getElementById('f-rarity').value;
             const price = document.getElementById('f-price').value;
+            const stock = document.getElementById('f-stock').value;
             const condition = document.getElementById('f-condition').value;
             const memo = document.getElementById('f-memo').value;
             const imgInput = document.getElementById('f-img');
@@ -276,12 +342,11 @@
             if (id) {
                 const c = cards.find(x => x.id == id);
                 if (c) {
-                    c.title = title; c.name = name; c.no = no; c.rarity = rarity; c.price = price; c.condition = condition; c.memo = memo;
+                    c.title = title; c.name = name; c.no = no; c.rarity = rarity; c.price = price; c.stock = stock; c.condition = condition; c.memo = memo;
                     if (!c.imgs) c.imgs = c.img ? [c.img] : [];
 
                     if (files.length > 0) {
                         processImages(files, 0, [], newImgs => {
-                            // 新しく選んだ画像で置き換える（または追加したい場合は結合も可ですが今回は分かりやすく差し替え）
                             c.imgs = newImgs;
                             finish();
                         });
@@ -292,7 +357,7 @@
             } else {
                 if (files.length === 0) { alert('画像を少なくとも1枚選択してください'); return; }
                 processImages(files, 0, [], newImgs => {
-                    cards.push({ id: Date.now(), title, name, no, rarity, price, condition, memo, imgs: newImgs });
+                    cards.push({ id: Date.now(), title, name, no, rarity, price, stock, condition, memo, imgs: newImgs });
                     finish();
                 });
             }
@@ -338,7 +403,7 @@
         }
 
         function finish() {
-            localStorage.setItem('tcg_data_v6', JSON.stringify(cards));
+            localStorage.setItem('tcg_data_v7', JSON.stringify(cards));
             closeModal();
             render();
         }
@@ -346,7 +411,7 @@
         function delCard(id) {
             if (confirm('本当に削除しますか？')) {
                 cards = cards.filter(x => x.id !== id);
-                localStorage.setItem('tcg_data_v6', JSON.stringify(cards));
+                localStorage.setItem('tcg_data_v7', JSON.stringify(cards));
                 render();
             }
         }

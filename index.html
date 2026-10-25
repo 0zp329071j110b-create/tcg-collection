@@ -23,14 +23,12 @@
         .owner-control-btns { display:flex; gap:4px; flex-wrap:wrap; }
         .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
         .card { background:var(--card-bg); border-radius:8px; overflow:hidden; border:1px solid var(--border); display:flex; flex-direction:column; position:relative; }
-        .card-img-container { width:100%; height:140px; background:#000; position:relative; display:grid; gap:1px; }
-        .card-img-container.count-1 { grid-template-columns:1fr; grid-template-rows:1fr; }
-        .card-img-container.count-2 { grid-template-columns:1fr 1fr; grid-template-rows:1fr; }
-        .card-img-container.count-3 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
-        .card-img-container.count-3 img:first-child { grid-row:span 2; }
-        .card-img-container.count-n { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+        
+        /* 変更: 1枚だけ綺麗に大きく表示する仕様 */
+        .card-img-container { width:100%; height:190px; background:#000; position:relative; overflow:hidden; }
         .card-img-container img { width:100%; height:100%; object-fit:cover; cursor:pointer; background:#000; }
-        .more-img-overlay { position:absolute; bottom:0; right:0; background:rgba(0,0,0,0.75); color:white; font-size:0.65rem; padding:2px 6px; border-top-left-radius:6px; font-weight:bold; }
+        .more-img-overlay { position:absolute; bottom:6px; right:6px; background:rgba(0,0,0,0.8); color:white; font-size:0.7rem; padding:3px 8px; border-radius:4px; font-weight:bold; }
+        
         .sold-badge { position:absolute; top:6px; left:6px; background:rgba(239,68,68,0.9); color:white; font-size:0.65rem; font-weight:bold; padding:2px 6px; border-radius:4px; z-index:2; }
         .stock-badge { position:absolute; top:6px; right:6px; background:rgba(15,23,42,0.85); color:#38bdf8; border:1px solid #0284c7; font-size:0.65rem; font-weight:bold; padding:2px 6px; border-radius:4px; z-index:2; }
         .card-body { padding:8px; flex:1; display:flex; flex-direction:column; justify-content:space-between; }
@@ -68,7 +66,6 @@
             <div style="font-size:0.65rem; color:var(--muted);" id="app-mode">ゲスト閲覧モード</div>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
-            <!-- ゲスト（お客さん）側専用の読込ボタン -->
             <button class="btn" onclick="document.getElementById('import-file-guest').click()" style="font-size:0.7rem; background:#475569; padding:6px 8px;">📥 データを読込</button>
             <input type="file" id="import-file-guest" accept=".json" style="display:none" onchange="importData(event)">
             
@@ -76,7 +73,6 @@
         </div>
     </header>
 
-    <!-- オーナー専用の管理・共有バー（シェア、バックアップ保存、読込） -->
     <div id="owner-share-bar" class="owner-control-bar" style="display:none;">
         <div class="owner-control-top"><span>📦 オーナー専用 データ管理・共有</span></div>
         <div class="owner-control-btns">
@@ -237,13 +233,19 @@
             filtered.forEach(c => {
                 const div = document.createElement('div'); div.className = 'card';
                 let imgs = c.imgs || (c.img ? [c.img] : []), stockNum = c.stock !== undefined ? Number(c.stock) : 1, imgsHtml = '';
+                
+                // 変更: 常に1枚目だけを表示し、2枚以上なら「+○枚」を重ねる
                 if (imgs.length > 0) {
-                    let countClass = imgs.length === 1 ? 'count-1' : (imgs.length === 2 ? 'count-2' : (imgs.length === 3 ? 'count-3' : 'count-n'));
-                    imgsHtml = `<div class="card-img-container ${countClass}">`;
-                    for(let i=0; i<Math.min(imgs.length, 4); i++) imgsHtml += `<img src="${imgs[i]}" onclick="openZoom(${c.id}, ${i})">`;
-                    if(imgs.length > 4) imgsHtml += `<div class="more-img-overlay" onclick="openZoom(${c.id}, 4)">+${imgs.length - 4}枚</div>`;
+                    imgsHtml = `<div class="card-img-container" onclick="openZoom(${c.id}, 0)">`;
+                    imgsHtml += `<img src="${imgs[0]}">`;
+                    if (imgs.length > 1) {
+                        imgsHtml += `<div class="more-img-overlay">+${imgs.length}枚</div>`;
+                    }
                     imgsHtml += `</div>`;
-                } else imgsHtml = `<div class="card-img-container count-1" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.7rem;">No Image</div>`;
+                } else {
+                    imgsHtml = `<div class="card-img-container" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.7rem;">No Image</div>`;
+                }
+
                 let badgeHtml = stockNum === 0 ? `<div class="sold-badge">SOLD OUT</div>` : `<div class="stock-badge">残り ${stockNum} 個</div>`;
                 let priceHtml = isOwner ? (c.price ? `<div class="card-price">¥${Number(c.price).toLocaleString()}</div>` : '<div class="card-price" style="color:var(--muted);">-</div>') : '';
                 let memoHtml = (isOwner && c.memo) ? `<div style="font-size:0.65rem;color:#fbbf24;margin-bottom:4px;">📝 ${escapeHtml(c.memo)}</div>` : '';

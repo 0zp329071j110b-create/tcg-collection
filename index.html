@@ -67,16 +67,22 @@
             <h1 id="app-title">TCGコレクション</h1>
             <div style="font-size:0.65rem; color:var(--muted);" id="app-mode">ゲスト閲覧モード</div>
         </div>
-        <button id="auth-btn" class="btn" onclick="toggleAuth()">オーナー認証</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <!-- お客さん（ゲスト）側でも使えるデータ読込ボタン -->
+            <button class="btn" onclick="document.getElementById('import-file').click()" style="font-size:0.7rem; background:#475569; padding:6px 8px;">📥 データを読込</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+            
+            <button id="auth-btn" class="btn" onclick="toggleAuth()">オーナー認証</button>
+        </div>
     </header>
 
+    <!-- オーナー専用の管理・共有バー（シェア、バックアップ保存、読込） -->
     <div id="owner-share-bar" class="owner-control-bar" style="display:none;">
-        <div class="owner-control-top"><span>📦 データ管理・共有</span></div>
+        <div class="owner-control-top"><span>📦 オーナー専用 データ管理・共有</span></div>
         <div class="owner-control-btns">
             <button class="btn btn-success" onclick="shareData()" style="font-size:0.7rem; padding:5px 8px;">📤 データをシェア</button>
             <button class="btn" onclick="exportData()" style="font-size:0.7rem; padding:5px 8px; background:#0284c7;">💾 バックアップ保存</button>
             <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="font-size:0.7rem; padding:5px 8px; background:#475569;">📥 読込</button>
-            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
         </div>
     </div>
 

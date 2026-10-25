@@ -15,7 +15,6 @@
         .btn { background:var(--accent); color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer; }
         .btn-danger { background:var(--danger); } .btn-success { background:var(--success); }
         
-        /* タブ切り替えバー */
         .tab-bar { display:flex; gap:6px; margin-bottom:10px; background:var(--card-bg); padding:6px; border-radius:10px; border:1px solid var(--border); }
         .tab-btn { flex:1; padding:8px; text-align:center; font-size:0.8rem; font-weight:bold; background:var(--bg); color:var(--muted); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
         .tab-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
@@ -95,7 +94,7 @@
         <input type="text" id="search-input" placeholder="カード名、商品番号、型番、メモで検索..." oninput="render()">
         <div class="filter-row">
             <div>タイトル: <select id="filter-title" onchange="render()"><option value="">すべて</option><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
-            <div>順序: <select id="sort-order" onchange="render()"><option value="new">新しい順</option><option value="price-desc">価格が高い順</option><option value="price-asc">価格が安い順</option><option value="stock-desc">在庫が多い順</option></select></div>
+            <div>順序: <select id="sort-order" onchange="render()"><option value="new">新しい順</option><option value="itemno-asc">商品番号順</option><option value="price-desc">価格が高い順</option><option value="price-asc">価格が安い順</option><option value="stock-desc">在庫が多い順</option></select></div>
             <div id="card-count">0枚</div>
         </div>
     </div>
@@ -216,8 +215,9 @@
             });
 
             filtered.sort((a, b) => {
+                if (sortOrder === 'itemno-asc') return (a.itemNo || '').localeCompare(b.itemNo || '', 'ja', { numeric: true });
                 if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
-                if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(a.price)||0);
+                if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(b.price)||0);
                 if (sortOrder === 'stock-desc') return (Number(b.stock)||0) - (Number(a.stock)||0);
                 return b.id - a.id;
             });
@@ -385,7 +385,6 @@
                     const tx = db.transaction(['sellCards', 'buyCards'], 'readwrite');
                     
                     if (Array.isArray(data)) {
-                        // 旧形式（販売データのみの場合）の互換対応
                         const store = tx.objectStore('sellCards');
                         store.clear();
                         data.forEach(c => store.put(c));
@@ -425,7 +424,7 @@
             if (isOwner) { isOwner = false; sessionStorage.removeItem('tcg_owner_session'); init(); }
             else { document.getElementById('pass-input').value = ''; document.getElementById('auth-modal').style.display = 'flex'; }
         }
-        function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+        function closeAuthModal() { document.getElementById('item-modal').style.display = 'none'; document.getElementById('auth-modal').style.display = 'none'; }
         function verifyPass() {
             if (document.getElementById('pass-input').value === '19951014') {
                 isOwner = true; sessionStorage.setItem('tcg_owner_session', 'true'); closeAuthModal(); init();

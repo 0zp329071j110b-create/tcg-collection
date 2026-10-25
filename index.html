@@ -30,7 +30,16 @@
 
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .card { background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: flex; flex-direction: column; }
-        .card img { width: 100%; height: 140px; object-fit: cover; cursor: pointer; background: #000; }
+        
+        /* 複数画像サムネイル用レイアウト */
+        .card-img-container { width: 100%; height: 140px; background: #000; position: relative; display: grid; gap: 1px; }
+        .card-img-container.count-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        .card-img-container.count-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+        .card-img-container.count-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .card-img-container.count-3 img:first-child { grid-row: span 2; }
+        .card-img-container.count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .card-img-container img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; background: #000; }
+
         .card-body { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .card-tag { font-size: 0.6rem; background: #1e293b; color: var(--muted); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
         .card-title { font-size: 0.85rem; font-weight: bold; margin-bottom: 2px; }
@@ -51,7 +60,14 @@
         .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
         .modal-btns button { flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
         .cancel-btn { background: var(--border); color: var(--text); }
-        #zoom-modal img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 8px; }
+        
+        /* ズームモーダル（複数画像スライド用） */
+        #zoom-modal { flex-direction: column; }
+        .zoom-container { max-width: 100%; max-height: 75vh; display: flex; justify-content: center; align-items: center; }
+        #zoom-img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; }
+        .zoom-thumbs { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; max-width: 100%; padding: 4px; }
+        .zoom-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 2px solid transparent; cursor: pointer; opacity: 0.6; }
+        .zoom-thumb.active { border-color: var(--accent); opacity: 1; }
     </style>
 </head>
 <body>
@@ -82,7 +98,11 @@
         <div class="modal-content">
             <h2 id="modal-title">カード追加</h2>
             <input type="hidden" id="edit-id">
-            <div class="f-group"><label>カード画像</label><input type="file" id="f-img" accept="image/*"></div>
+            <div class="f-group">
+                <label>カード画像 (最大4枚まで選択可)</label>
+                <input type="file" id="f-img" accept="image/*" multiple>
+                <div style="font-size: 0.65rem; color: var(--muted); margin-top: 2px;">※複数選択または追加で最大4枚まで登録できます</div>
+            </div>
             <div class="f-group"><label>タイトル</label><select id="f-title"><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
             <div class="f-group"><label>カード名</label><input type="text" id="f-name" placeholder="例: 青眼の白龍"></div>
             <div class="modal-row">
@@ -112,13 +132,18 @@
         </div>
     </div>
 
-    <div id="zoom-modal" class="modal" onclick="this.style.display='none'">
-        <img id="zoom-img" src="">
+    <div id="zoom-modal" class="modal" onclick="if(event.target === this) closeZoom()">
+        <div class="zoom-container">
+            <img id="zoom-img" src="">
+        </div>
+        <div class="zoom-thumbs" id="zoom-thumbs"></div>
+        <button class="cancel-btn" style="margin-top: 12px; width: 120px; padding: 6px;" onclick="closeZoom()">閉じる</button>
     </div>
 
     <script>
         let isOwner = false;
-        let cards = JSON.parse(localStorage.getItem('tcg_data_v5') || '[]');
+        // バージョンアップに伴いストレージキーを v6 に更新
+        let cards = JSON.parse(localStorage.getItem('tcg_data_v6') || '[]');
 
         function init() {
             document.getElementById('app-title').textContent = isOwner ? 'TCGコレクション (オーナー)' : 'TCGコレクション';
@@ -167,8 +192,24 @@
             filtered.forEach(c => {
                 const div = document.createElement('div');
                 div.className = 'card';
+                
+                // 画像配列の安全な取得（旧v5データとの互換性対応含む）
+                let imgs = c.imgs || (c.img ? [c.img] : []);
+                let countClass = 'count-' + Math.min(imgs.length, 4);
+                
+                let imgsHtml = '';
+                if (imgs.length > 0) {
+                    imgsHtml = `<div class="card-img-container ${countClass}">`;
+                    imgs.forEach((imgSrc, idx) => {
+                        imgsHtml += `<img src="${imgSrc}" onclick="openZoom(${c.id}, ${idx})">`;
+                    });
+                    imgsHtml += `</div>`;
+                } else {
+                    imgsHtml = `<div class="card-img-container count-1" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.7rem;">No Image</div>`;
+                }
+
                 div.innerHTML = `
-                    <img src="${c.img}" onclick="document.getElementById('zoom-img').src='${c.img}';document.getElementById('zoom-modal').style.display='flex';">
+                    ${imgsHtml}
                     <div class="card-body">
                         <div>
                             <span class="card-tag">${c.title}</span>
@@ -230,13 +271,18 @@
 
             if (!name) { alert('カード名を入力してください'); return; }
 
+            const files = Array.from(imgInput.files).slice(0, 4);
+
             if (id) {
                 const c = cards.find(x => x.id == id);
                 if (c) {
                     c.title = title; c.name = name; c.no = no; c.rarity = rarity; c.price = price; c.condition = condition; c.memo = memo;
-                    if (imgInput.files && imgInput.files[0]) {
-                        compressImage(imgInput.files[0], base64 => {
-                            c.img = base64;
+                    if (!c.imgs) c.imgs = c.img ? [c.img] : [];
+
+                    if (files.length > 0) {
+                        processImages(files, 0, [], newImgs => {
+                            // 新しく選んだ画像で置き換える（または追加したい場合は結合も可ですが今回は分かりやすく差し替え）
+                            c.imgs = newImgs;
                             finish();
                         });
                         return;
@@ -244,12 +290,23 @@
                     finish();
                 }
             } else {
-                if (!imgInput.files || !imgInput.files[0]) { alert('画像を選択してください'); return; }
-                compressImage(imgInput.files[0], base64 => {
-                    cards.push({ id: Date.now(), title, name, no, rarity, price, condition, memo, img: base64 });
+                if (files.length === 0) { alert('画像を少なくとも1枚選択してください'); return; }
+                processImages(files, 0, [], newImgs => {
+                    cards.push({ id: Date.now(), title, name, no, rarity, price, condition, memo, imgs: newImgs });
                     finish();
                 });
             }
+        }
+
+        function processImages(files, index, acc, callback) {
+            if (index >= files.length) {
+                callback(acc);
+                return;
+            }
+            compressImage(files[index], base64 => {
+                acc.push(base64);
+                processImages(files, index + 1, acc, callback);
+            });
         }
 
         function compressImage(file, callback) {
@@ -281,7 +338,7 @@
         }
 
         function finish() {
-            localStorage.setItem('tcg_data_v5', JSON.stringify(cards));
+            localStorage.setItem('tcg_data_v6', JSON.stringify(cards));
             closeModal();
             render();
         }
@@ -289,12 +346,42 @@
         function delCard(id) {
             if (confirm('本当に削除しますか？')) {
                 cards = cards.filter(x => x.id !== id);
-                localStorage.setItem('tcg_data_v5', JSON.stringify(cards));
+                localStorage.setItem('tcg_data_v6', JSON.stringify(cards));
                 render();
             }
         }
 
-     function escapeHtml(str) {
+        function openZoom(cardId, imgIndex) {
+            const c = cards.find(x => x.id === cardId);
+            if (!c) return;
+            const imgs = c.imgs || (c.img ? [c.img] : []);
+            
+            const zoomImg = document.getElementById('zoom-img');
+            const zoomThumbs = document.getElementById('zoom-thumbs');
+            
+            zoomImg.src = imgs[imgIndex] || '';
+            zoomThumbs.innerHTML = '';
+
+            imgs.forEach((src, idx) => {
+                const thumb = document.createElement('img');
+                thumb.src = src;
+                thumb.className = 'zoom-thumb' + (idx === imgIndex ? ' active' : '');
+                thumb.onclick = () => {
+                    zoomImg.src = src;
+                    document.querySelectorAll('.zoom-thumb').forEach(t => t.classList.remove('active'));
+                    thumb.classList.add('active');
+                };
+                zoomThumbs.appendChild(thumb);
+            });
+
+            document.getElementById('zoom-modal').style.display = 'flex';
+        }
+
+        function closeZoom() {
+            document.getElementById('zoom-modal').style.display = 'none';
+        }
+
+        function escapeHtml(str) {
             return (str || '').replace(/[&'`<>]/g, m => ({ '&': '&amp;', "'": '&#x27;', '`': '&#x60;', '<': '&lt;', '>': '&gt;' }[m]));
         }
 

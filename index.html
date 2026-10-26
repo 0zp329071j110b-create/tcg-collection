@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>TCGコレクション & 買取表</title>
+    <title>TCG & 買取表</title>
     <style>
         :root { --bg:#090d16; --card-bg:#131b2e; --text:#f1f5f9; --muted:#94a3b8; --accent:#6366f1; --danger:#ef4444; --success:#10b981; --border:#1e293b; }
         * { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; -webkit-tap-highlight-color:transparent; }
@@ -20,8 +20,11 @@
         .tab-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
         .tab-btn.buy-tab.active { background:#10b981; border-color:#10b981; }
 
-        .search-area { background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; }
-        .search-area input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; margin-bottom:8px; }
+        .search-area { background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
+        .search-row-input { display:flex; gap:6px; }
+        .search-row-input select { background:var(--bg); color:var(--text); border:1px solid var(--border); padding:6px; border-radius:6px; font-size:0.75rem; flex:0 0 110px; }
+        .search-row-input input { flex:1; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; }
+        
         .filter-row { display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px; }
         .filter-row select { background:var(--bg); color:var(--text); border:1px solid var(--border); padding:4px 6px; border-radius:4px; font-size:0.75rem; }
         .owner-control-bar { background:#1e293b; padding:8px 10px; border-radius:8px; border:1px solid var(--border); margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
@@ -88,10 +91,16 @@
             <button class="btn" onclick="exportData()" style="font-size:0.7rem; padding:5px 8px; background:#0284c7;">💾 バックアップ保存</button>
         </div>
     </div>
-
-    <!-- 検索バーを1つに統合：商品番号・カード名・PSA10・BOXなどをすべて一括で柔軟に検索 -->
     <div class="search-area">
-        <input type="text" id="search-input" placeholder="商品番号、カード名、PSA10、BOXなどで検索..." oninput="render()">
+        <div class="search-row-input">
+            <select id="search-target-type" onchange="render()">
+                <option value="all">すべて</option>
+                <option value="itemNo">商品番号</option>
+                <option value="name">カード名</option>
+                <option value="condition">状態 (PSA10等)</option>
+            </select>
+            <input type="text" id="search-input" placeholder="キーワードを入力..." oninput="render()">
+        </div>
         <div class="filter-row">
             <div>タイトル: <select id="filter-title" onchange="render()"><option value="">すべて</option><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
             <div>順序: <select id="sort-order" onchange="render()"><option value="new">新しい順</option><option value="itemno-asc">商品番号順</option><option value="price-desc">価格が高い順</option><option value="price-asc">価格が安い順</option><option value="stock-desc">在庫が多い順</option></select></div>
@@ -225,8 +234,17 @@
             document.getElementById('bulk-mode-btn').textContent = isBulkMode ? '通常入力モードに戻す' : '📋 コピペ一括登録モードに切り替え';
             document.getElementById('modal-title').textContent = isBulkMode ? '一括コピペ登録' : 'カード追加';
         }
+        // 商品番号の数値を正しく抽出・解析する関数（1, 2, 10の順に正しく並び替えるため）
+        function parseItemNo(itemNo) {
+            if (!itemNo) return { str: '', num: Infinity };
+            const str = String(itemNo).trim();
+            const match = str.match(/\d+/);
+            const num = match ? parseInt(match[0], 10) : Infinity;
+            return { str, num };
+        }
 
         function render() {
+            const targetType = document.getElementById('search-target-type').value;
             const keyword = document.getElementById('search-input').value.toLowerCase().trim();
             const filterTitle = document.getElementById('filter-title').value;
             const sortOrder = document.getElementById('sort-order').value;
@@ -235,32 +253,43 @@
             let activeCards = currentTab === 'sell' ? sellCards : buyCards;
 
             let filtered = activeCards.filter(c => {
-                // 商品番号(itemNo)、カード名、型番、レアリティ、コンディション、メモ、タイトルすべてを横断して完全ヒット
-                const searchTarget = (
-                    (c.itemNo || '') + ' ' + 
-                    (c.name || '') + ' ' + 
-                    (c.no || '') + ' ' + 
-                    (c.rarity || '') + ' ' + 
-                    (c.condition || '') + ' ' + 
-                    (c.memo || '') + ' ' + 
-                    (c.title || '')
-                ).toLowerCase();
-
-                const matchKeyword = keyword === '' || searchTarget.includes(keyword);
-                return matchKeyword && (filterTitle === '' || c.title === filterTitle);
+                let match = true;
+                if (keyword !== '') {
+                    if (targetType === 'itemNo') {
+                        match = (c.itemNo || '').toLowerCase().includes(keyword);
+                    } else if (targetType === 'name') {
+                        match = (c.name || '').toLowerCase().includes(keyword);
+                    } else if (targetType === 'condition') {
+                        match = (c.condition || '').toLowerCase().includes(keyword);
+                    } else {
+                        // すべて検索
+                        const searchTarget = (
+                            (c.itemNo || '') + ' ' + 
+                            (c.name || '') + ' ' + 
+                            (c.no || '') + ' ' + 
+                            (c.rarity || '') + ' ' + 
+                            (c.condition || '') + ' ' + 
+                            (c.memo || '') + ' ' + 
+                            (c.title || '')
+                        ).toLowerCase();
+                        match = searchTarget.includes(keyword);
+                    }
+                }
+                return match && (filterTitle === '' || c.title === filterTitle);
             });
 
-            // 商品番号順の並び替え（1, 2, 10... のように数値を正しく認識）
+            // 順序の並び替え（商品番号順の強力な数値認識ソート）
             filtered.sort((a, b) => {
                 if (sortOrder === 'itemno-asc') {
-                    let valA = (a.itemNo || '').trim();
-                    let valB = (b.itemNo || '').trim();
-                    let numA = Number(valA);
-                    let numB = Number(valB);
-                    if (!isNaN(numA) && !isNaN(numB)) {
-                        return numA - numB;
+                    const parsedA = parseItemNo(a.itemNo || a.no);
+                    const parsedB = parseItemNo(b.itemNo || b.no);
+                    
+                    if (parsedA.num !== Infinity && parsedB.num !== Infinity) {
+                        if (parsedA.num !== parsedB.num) {
+                            return parsedA.num - parsedB.num;
+                        }
                     }
-                    return valA.localeCompare(valB, 'ja', { numeric: true, sensitivity: 'base' });
+                    return parsedA.str.localeCompare(parsedB.str, 'ja', { numeric: true, sensitivity: 'base' });
                 }
                 if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
                 if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(b.price)||0);
@@ -315,7 +344,6 @@
                 grid.appendChild(div);
             });
         }
-
         function inquireCard(id) {
             const c = sellCards.find(x => x.id === id); if (!c) return;
             prompt("メッセージをコピーしてLINE等に送信してください：", `【購入希望】${c.name} (商品番号: ${c.itemNo || '-'} / 型番: ${c.no || '-'})`);
@@ -445,7 +473,6 @@
                 }
             }
         }
-
         function processImages(files, index, acc, cb) {
             if (index >= files.length) { cb(acc); return; }
             compressImage(files[index], base64 => { acc.push(base64); processImages(files, index + 1, acc, cb); });

@@ -110,7 +110,6 @@
             <h2 id="modal-title">カード追加</h2>
             <input type="hidden" id="edit-id">
             
-            <!-- 通常入力モード用の項目 -->
             <div id="single-fields">
                 <div class="f-group"><label>カード画像 (最大10枚まで)</label><input type="file" id="f-img" accept="image/*" multiple></div>
                 <div class="f-group"><label>タイトル</label><select id="f-title"><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
@@ -130,7 +129,6 @@
                 <div class="f-group"><label>メモ (オーナー用)</label><input type="text" id="f-memo" placeholder="例: 仕入値3000円"></div>
             </div>
 
-            <!-- コピペ一括登録モード用の項目（新規追加時のみ） -->
             <div id="bulk-fields" style="display:none;">
                 <div class="f-group">
                     <label>📋 テキスト一括コピペ登録（1行に1件）</label>
@@ -166,7 +164,6 @@
         <div class="zoom-scroll-area"><img id="zoom-img" src="" onclick="toggleZoomScale()"></div>
         <div class="zoom-thumbs" id="zoom-thumbs"></div>
     </div>
-
     <script>
         let currentTab = 'sell'; // 'sell' or 'buy'
         let isOwner = sessionStorage.getItem('tcg_owner_session') === 'true';
@@ -228,6 +225,7 @@
             document.getElementById('bulk-mode-btn').textContent = isBulkMode ? '通常入力モードに戻す' : '📋 コピペ一括登録モードに切り替え';
             document.getElementById('modal-title').textContent = isBulkMode ? '一括コピペ登録' : 'カード追加';
         }
+
         function render() {
             const keyword = document.getElementById('search-input').value.toLowerCase();
             const filterTitle = document.getElementById('filter-title').value;
@@ -243,7 +241,6 @@
 
             filtered.sort((a, b) => {
                 if (sortOrder === 'itemno-asc') {
-                    // 数字やアルファベットを綺麗に比較するロジック
                     return (a.itemNo || '').localeCompare(b.itemNo || '', 'ja', { numeric: true, sensitivity: 'base' });
                 }
                 if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
@@ -315,7 +312,7 @@
             isBulkMode = false;
             document.getElementById('single-fields').style.display = 'block';
             document.getElementById('bulk-fields').style.display = 'none';
-            document.getElementById('mode-switch-container').style.display = id ? 'none' : 'block'; // 編集時は一括非表示
+            document.getElementById('mode-switch-container').style.display = id ? 'none' : 'block';
             document.getElementById('bulk-mode-btn').textContent = '📋 コピペ一括登録モードに切り替え';
 
             const activeCards = currentTab === 'sell' ? sellCards : buyCards;
@@ -348,7 +345,6 @@
             const storeName = currentTab === 'sell' ? 'sellCards' : 'buyCards';
             const activeCards = currentTab === 'sell' ? sellCards : buyCards;
 
-            // コピペ一括登録モードの場合
             if (isBulkMode) {
                 const bulkText = document.getElementById('f-bulk-text').value.trim();
                 if (!bulkText) { alert('テキストを入力してください'); return; }
@@ -370,11 +366,10 @@
                 });
                 closeModal();
                 loadAllData();
-                alert(`${count件のカードを一括登録しました！`);
+                alert(`${count}件のカードを一括登録しました！`);
                 return;
             }
 
-            // 通常保存モード
             const idVal = document.getElementById('edit-id').value, title = document.getElementById('f-title').value, name = document.getElementById('f-name').value;
             const itemNo = document.getElementById('f-itemno').value, no = document.getElementById('f-no').value, rarity = document.getElementById('f-rarity').value;
             const price = document.getElementById('f-price').value, stock = document.getElementById('f-stock').value, condition = document.getElementById('f-condition').value;
@@ -489,7 +484,7 @@
             if (isOwner) { isOwner = false; sessionStorage.removeItem('tcg_owner_session'); init(); }
             else { document.getElementById('pass-input').value = ''; document.getElementById('auth-modal').style.display = 'flex'; }
         }
-        function closeAuthModal() { document.getElementById('item-modal').style.display = 'none'; document.getElementById('auth-modal').style.display = 'none'; }
+        function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
         function verifyPass() {
             if (document.getElementById('pass-input').value === '19951014') {
                 isOwner = true; sessionStorage.setItem('tcg_owner_session', 'true'); closeAuthModal(); init();

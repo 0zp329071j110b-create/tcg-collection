@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>TCG & 買取表</title>
+    <title>TCGコレクション & 買取表</title>
     <style>
         :root { --bg:#090d16; --card-bg:#131b2e; --text:#f1f5f9; --muted:#94a3b8; --accent:#6366f1; --danger:#ef4444; --success:#10b981; --border:#1e293b; }
         * { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; -webkit-tap-highlight-color:transparent; }
@@ -90,6 +90,8 @@
             <button class="btn btn-success" onclick="shareData()" style="font-size:0.7rem; padding:5px 8px;">📤 データをシェア</button>
             <button class="btn" onclick="exportData()" style="font-size:0.7rem; padding:5px 8px; background:#0284c7;">💾 バックアップ保存</button>
         </div>
+        <!-- 👑 オーナー専用総額表示エリア -->
+        <div id="owner-summary" style="font-size:0.75rem; color:#34d399; font-weight:bold; margin-top:4px; display:none;"></div>
     </div>
     <div class="search-area">
         <div class="search-row-input">
@@ -298,6 +300,22 @@
             });
 
             document.getElementById('card-count').textContent = filtered.length + '枚';
+
+            // 👑 オーナー専用：販売・買取の総額をリアルタイム自動計算
+            const summaryEl = document.getElementById('owner-summary');
+            if (isOwner && summaryEl) {
+                if (currentTab === 'sell') {
+                    const totalSellVal = sellCards.reduce((acc, c) => acc + (Number(c.price) || 0) * (c.stock !== undefined ? Number(c.stock) : 1), 0);
+                    summaryEl.textContent = `💰 販売中商品の総額 (在庫込): ¥${totalSellVal.toLocaleString()}`;
+                    summaryEl.style.display = 'block';
+                } else {
+                    const totalBuyVal = buyCards.reduce((acc, c) => acc + (Number(c.price) || 0) * (c.stock !== undefined ? Number(c.stock) : 1), 0);
+                    summaryEl.textContent = `📋 買取募集の総額 (募集数込): ¥${totalBuyVal.toLocaleString()}`;
+                    summaryEl.style.display = 'block';
+                }
+            } else if (summaryEl) {
+                summaryEl.style.display = 'none';
+            }
 
             filtered.forEach(c => {
                 const div = document.createElement('div'); div.className = 'card';

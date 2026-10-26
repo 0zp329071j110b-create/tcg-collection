@@ -20,9 +20,9 @@
         .tab-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
         .tab-btn.buy-tab.active { background:#10b981; border-color:#10b981; }
 
-        .search-area { background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
-        .search-area input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; }
-        .filter-row { display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px; margin-top:2px; }
+        .search-area { background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; }
+        .search-area input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; margin-bottom:8px; }
+        .filter-row { display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px; }
         .filter-row select { background:var(--bg); color:var(--text); border:1px solid var(--border); padding:4px 6px; border-radius:4px; font-size:0.75rem; }
         .owner-control-bar { background:#1e293b; padding:8px 10px; border-radius:8px; border:1px solid var(--border); margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
         .owner-control-top span { font-size:0.75rem; color:#fbbf24; font-weight:bold; }
@@ -89,10 +89,9 @@
         </div>
     </div>
 
-    <!-- 検索エリア（カード名・キーワード用 ＆ 商品番号用の2種に分割） -->
+    <!-- 検索バーを1つに統合：商品番号・カード名・PSA10・BOXなどをすべて一括で柔軟に検索 -->
     <div class="search-area">
-        <input type="text" id="search-name" placeholder="カード名・PSA10・BOXなどで検索..." oninput="render()">
-        <input type="text" id="search-itemno" placeholder="商品番号で検索 (例: 1, 2, A-01)..." oninput="render()">
+        <input type="text" id="search-input" placeholder="商品番号、カード名、PSA10、BOXなどで検索..." oninput="render()">
         <div class="filter-row">
             <div>タイトル: <select id="filter-title" onchange="render()"><option value="">すべて</option><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
             <div>順序: <select id="sort-order" onchange="render()"><option value="new">新しい順</option><option value="itemno-asc">商品番号順</option><option value="price-desc">価格が高い順</option><option value="price-asc">価格が安い順</option><option value="stock-desc">在庫が多い順</option></select></div>
@@ -228,8 +227,7 @@
         }
 
         function render() {
-            const keywordName = document.getElementById('search-name').value.toLowerCase().trim();
-            const keywordItemNo = document.getElementById('search-itemno').value.toLowerCase().trim();
+            const keyword = document.getElementById('search-input').value.toLowerCase().trim();
             const filterTitle = document.getElementById('filter-title').value;
             const sortOrder = document.getElementById('sort-order').value;
             const grid = document.getElementById('grid'); grid.innerHTML = '';
@@ -237,18 +235,22 @@
             let activeCards = currentTab === 'sell' ? sellCards : buyCards;
 
             let filtered = activeCards.filter(c => {
-                // カード名・キーワード検索（PSA10, BOX, レアリティ, コンディション, メモ等を網羅）
-                const nameTarget = (c.name + ' ' + (c.no||'') + ' ' + (c.rarity||'') + ' ' + (c.condition||'') + ' ' + (c.memo||'') + ' ' + c.title).toLowerCase();
-                const matchName = keywordName === '' || nameTarget.includes(keywordName);
+                // 商品番号(itemNo)、カード名、型番、レアリティ、コンディション、メモ、タイトルすべてを横断して完全ヒット
+                const searchTarget = (
+                    (c.itemNo || '') + ' ' + 
+                    (c.name || '') + ' ' + 
+                    (c.no || '') + ' ' + 
+                    (c.rarity || '') + ' ' + 
+                    (c.condition || '') + ' ' + 
+                    (c.memo || '') + ' ' + 
+                    (c.title || '')
+                ).toLowerCase();
 
-                // 商品番号検索（商品番号に完全に特化してマッチ）
-                const itemNoTarget = (c.itemNo || '').toLowerCase();
-                const matchItemNo = keywordItemNo === '' || itemNoTarget.includes(keywordItemNo);
-
-                return matchName && matchItemNo && (filterTitle === '' || c.title === filterTitle);
+                const matchKeyword = keyword === '' || searchTarget.includes(keyword);
+                return matchKeyword && (filterTitle === '' || c.title === filterTitle);
             });
 
-            // 順序の並び替え（商品番号順の数値を正しく認識するように修正）
+            // 商品番号順の並び替え（1, 2, 10... のように数値を正しく認識）
             filtered.sort((a, b) => {
                 if (sortOrder === 'itemno-asc') {
                     let valA = (a.itemNo || '').trim();

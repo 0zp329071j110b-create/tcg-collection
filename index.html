@@ -20,9 +20,9 @@
         .tab-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
         .tab-btn.buy-tab.active { background:#10b981; border-color:#10b981; }
 
-        .search-area { background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; }
-        .search-area input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; margin-bottom:8px; }
-        .filter-row { display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px; }
+        .search-area { background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
+        .search-area input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; }
+        .filter-row { display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; gap:6px; margin-top:2px; }
         .filter-row select { background:var(--bg); color:var(--text); border:1px solid var(--border); padding:4px 6px; border-radius:4px; font-size:0.75rem; }
         .owner-control-bar { background:#1e293b; padding:8px 10px; border-radius:8px; border:1px solid var(--border); margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
         .owner-control-top span { font-size:0.75rem; color:#fbbf24; font-weight:bold; }
@@ -89,8 +89,10 @@
         </div>
     </div>
 
+    <!-- 検索エリア（カード名・キーワード用 ＆ 商品番号用の2種に分割） -->
     <div class="search-area">
-        <input type="text" id="search-input" placeholder="カード名、商品番号、型番、メモで検索..." oninput="render()">
+        <input type="text" id="search-name" placeholder="カード名・PSA10・BOXなどで検索..." oninput="render()">
+        <input type="text" id="search-itemno" placeholder="商品番号で検索 (例: 1, 2, A-01)..." oninput="render()">
         <div class="filter-row">
             <div>タイトル: <select id="filter-title" onchange="render()"><option value="">すべて</option><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
             <div>順序: <select id="sort-order" onchange="render()"><option value="new">新しい順</option><option value="itemno-asc">商品番号順</option><option value="price-desc">価格が高い順</option><option value="price-asc">価格が安い順</option><option value="stock-desc">在庫が多い順</option></select></div>
@@ -123,9 +125,9 @@
                 </div>
                 <div class="modal-row">
                     <div class="f-group" style="flex:1;"><label id="f-price-label">販売金額 (円)</label><input type="number" id="f-price" placeholder="例: 5000"></div>
-                    <div class="f-group" style="flex:1;"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
+                    <div class="f-group" style="flex:1;"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: PSA10, 美品"></div>
                 </div>
-                <div class="f-group"><label>メモ (オーナー用)</label><input type="text" id="f-memo" placeholder="例: 仕入値3000円"></div>
+                <div class="f-group"><label>メモ (オーナー用)</label><input type="text" id="f-memo" placeholder="例: BOX在庫等"></div>
             </div>
 
             <div id="bulk-fields" style="display:none;">
@@ -167,7 +169,7 @@
         let isOwner = sessionStorage.getItem('tcg_owner_session') === 'true';
         let sellCards = [], buyCards = [], currentZoomScale = 1, db;
         let isBulkMode = false;
-        let cachedCopiedImages = []; // コピー時の画像保持用
+        let cachedCopiedImages = [];
 
         const request = indexedDB.open('TCGUnifiedDB', 2);
         request.onsuccess = e => { db = e.target.result; loadAllData(); };
@@ -226,7 +228,8 @@
         }
 
         function render() {
-            const keyword = document.getElementById('search-input').value.toLowerCase();
+            const keywordName = document.getElementById('search-name').value.toLowerCase().trim();
+            const keywordItemNo = document.getElementById('search-itemno').value.toLowerCase().trim();
             const filterTitle = document.getElementById('filter-title').value;
             const sortOrder = document.getElementById('sort-order').value;
             const grid = document.getElementById('grid'); grid.innerHTML = '';
@@ -234,14 +237,28 @@
             let activeCards = currentTab === 'sell' ? sellCards : buyCards;
 
             let filtered = activeCards.filter(c => {
-                // 商品番号(itemNo)も型番(no)も完全に検索対象として網羅
-                const searchTarget = (c.name + ' ' + (c.itemNo||'') + ' ' + (c.no||'') + ' ' + (c.rarity||'') + ' ' + (c.condition||'') + ' ' + (c.memo||'') + ' ' + c.title).toLowerCase();
-                return searchTarget.includes(keyword) && (filterTitle === '' || c.title === filterTitle);
+                // カード名・キーワード検索（PSA10, BOX, レアリティ, コンディション, メモ等を網羅）
+                const nameTarget = (c.name + ' ' + (c.no||'') + ' ' + (c.rarity||'') + ' ' + (c.condition||'') + ' ' + (c.memo||'') + ' ' + c.title).toLowerCase();
+                const matchName = keywordName === '' || nameTarget.includes(keywordName);
+
+                // 商品番号検索（商品番号に完全に特化してマッチ）
+                const itemNoTarget = (c.itemNo || '').toLowerCase();
+                const matchItemNo = keywordItemNo === '' || itemNoTarget.includes(keywordItemNo);
+
+                return matchName && matchItemNo && (filterTitle === '' || c.title === filterTitle);
             });
 
+            // 順序の並び替え（商品番号順の数値を正しく認識するように修正）
             filtered.sort((a, b) => {
                 if (sortOrder === 'itemno-asc') {
-                    return (a.itemNo || '').localeCompare(b.itemNo || '', 'ja', { numeric: true, sensitivity: 'base' });
+                    let valA = (a.itemNo || '').trim();
+                    let valB = (b.itemNo || '').trim();
+                    let numA = Number(valA);
+                    let numB = Number(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return numA - numB;
+                    }
+                    return valA.localeCompare(valB, 'ja', { numeric: true, sensitivity: 'base' });
                 }
                 if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
                 if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(b.price)||0);
@@ -290,7 +307,6 @@
                     actionBtnHtml = `<button class="buy-btn" style="background:#10b981;" onclick="inquireBuy(${c.id})">💬 買取を問い合わせ</button>`;
                 }
 
-                // オーナー用アクション（編集・コピー・削除）
                 let ownerActionsHtml = isOwner ? `<div class="card-actions"><button class="edit-btn" onclick="openModal(${c.id})">編集</button><button class="copy-btn" onclick="copyCard(${c.id})">コピー</button><button class="del-btn" onclick="delCard(${c.id})">削除</button></div>` : '';
 
                 div.innerHTML = `${badgeHtml}${imgsHtml}<div class="card-body"><div><span class="card-tag">${c.title}</span><div class="card-title">${escapeHtml(c.name)}</div><div class="card-sub">${subText.join(' / ')}</div><div class="card-sub">${escapeHtml(c.condition || '')}</div>${priceHtml}${memoHtml}</div><div>${actionBtnHtml}${ownerActionsHtml}</div></div>`;
@@ -308,13 +324,12 @@
             prompt("メッセージをコピーしてLINE等に送信してください：", `【買取希望】${c.name} (商品番号: ${c.itemNo || '-'} / 型番: ${c.no || '-'}) を買い取ってほしいです。`);
         }
 
-        // 既存カードをコピーして新規追加する関数
         function copyCard(id) {
             const activeCards = currentTab === 'sell' ? sellCards : buyCards;
             const c = activeCards.find(x => x.id === id);
             if (!c) return;
 
-            document.getElementById('edit-id').value = ''; // 新規扱いにするため空にする
+            document.getElementById('edit-id').value = '';
             isBulkMode = false;
             document.getElementById('single-fields').style.display = 'block';
             document.getElementById('bulk-fields').style.display = 'none';
@@ -325,10 +340,9 @@
             document.getElementById('f-stock-label').textContent = currentTab === 'sell' ? '在庫数' : '募集数 (枚数)';
             document.getElementById('f-price-label').textContent = currentTab === 'sell' ? '販売金額 (円)' : '買取金額 (円)';
 
-            // 既存データをフォームにセット（商品番号は重複避けるため空にするか、わかりやすくする）
             document.getElementById('f-title').value = c.title;
             document.getElementById('f-name').value = c.name;
-            document.getElementById('f-itemno').value = ''; // 商品番号は新しく入力してもらう
+            document.getElementById('f-itemno').value = '';
             document.getElementById('f-no').value = c.no || '';
             document.getElementById('f-rarity').value = c.rarity || '';
             document.getElementById('f-price').value = c.price || '';
@@ -337,9 +351,7 @@
             document.getElementById('f-memo').value = c.memo || '';
             document.getElementById('f-img').value = '';
 
-            // 画像を引き継ぐために保持
             cachedCopiedImages = c.imgs || (c.img ? [c.img] : []);
-
             document.getElementById('item-modal').style.display = 'flex';
         }
 
@@ -416,18 +428,15 @@
             const files = Array.from(imgInput.files).slice(0, 10), cardId = idVal ? Number(idVal) : Date.now();
 
             if (idVal) {
-                // 既存の編集
                 const existing = activeCards.find(x => x.id === cardId);
                 let currentImgs = existing ? (existing.imgs || (existing.img ? [existing.img] : [])) : [];
                 if (files.length > 0) {
                     processImages(files, 0, [], newImgs => { saveCardToDB(storeName, { id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => { closeModal(); }); });
                 } else { saveCardToDB(storeName, { id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: currentImgs }, () => { closeModal(); }); }
             } else {
-                // 新規追加 または コピー追加
                 if (files.length > 0) {
                     processImages(files, 0, [], newImgs => { saveCardToDB(storeName, { id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: newImgs }, () => { closeModal(); }); });
                 } else if (cachedCopiedImages.length > 0) {
-                    // コピー元の画像を引き継ぐ場合
                     saveCardToDB(storeName, { id: cardId, title, name, itemNo, no, rarity, price, stock, condition, memo, imgs: cachedCopiedImages }, () => { closeModal(); cachedCopiedImages = []; });
                 } else {
                     alert('画像を少なくとも1枚選択してください');

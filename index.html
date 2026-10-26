@@ -48,7 +48,7 @@
         .modal-content h2 { font-size:1rem; margin-bottom:12px; }
         .f-group { margin-bottom:8px; }
         .f-group label { display:block; font-size:0.75rem; color:var(--muted); margin-bottom:2px; }
-        .f-group input, .f-group select { width:100%; padding:7px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; }
+        .f-group input, .f-group select, .f-group textarea { width:100%; padding:7px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:0.85rem; }
         .modal-row { display:flex; gap:8px; }
         .modal-btns { display:flex; gap:8px; margin-top:12px; }
         .modal-btns button { flex:1; padding:8px; border-radius:6px; border:none; font-weight:bold; cursor:pointer; font-size:0.85rem; }
@@ -109,22 +109,40 @@
         <div class="modal-content">
             <h2 id="modal-title">カード追加</h2>
             <input type="hidden" id="edit-id">
-            <div class="f-group"><label>カード画像 (最大10枚まで)</label><input type="file" id="f-img" accept="image/*" multiple></div>
-            <div class="f-group"><label>タイトル</label><select id="f-title"><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
-            <div class="f-group"><label>カード名</label><input type="text" id="f-name" placeholder="例: 青眼の白龍"></div>
-            <div class="modal-row">
-                <div class="f-group" style="flex:1;"><label>商品番号</label><input type="text" id="f-itemno" placeholder="例: A-001"></div>
-                <div class="f-group" style="flex:1;"><label>型番 / No.</label><input type="text" id="f-no" placeholder="例: QCC1-JP001"></div>
+            
+            <!-- 通常入力モード用の項目 -->
+            <div id="single-fields">
+                <div class="f-group"><label>カード画像 (最大10枚まで)</label><input type="file" id="f-img" accept="image/*" multiple></div>
+                <div class="f-group"><label>タイトル</label><select id="f-title"><option value="遊戯王">遊戯王</option><option value="ポケカ">ポケカ</option><option value="ワンピ">ワンピ</option><option value="デュエマ">デュエマ</option><option value="その他">その他</option></select></div>
+                <div class="f-group"><label>カード名</label><input type="text" id="f-name" placeholder="例: 青眼の白龍"></div>
+                <div class="modal-row">
+                    <div class="f-group" style="flex:1;"><label>商品番号</label><input type="text" id="f-itemno" placeholder="例: 1, 2, A-01"></div>
+                    <div class="f-group" style="flex:1;"><label>型番 / No.</label><input type="text" id="f-no" placeholder="例: QCC1-JP001"></div>
+                </div>
+                <div class="modal-row">
+                    <div class="f-group" style="flex:1;"><label>レアリティ</label><input type="text" id="f-rarity" placeholder="例: UR, SAR"></div>
+                    <div class="f-group" style="flex:1;"><label id="f-stock-label">在庫数</label><input type="number" id="f-stock" value="1" min="0"></div>
+                </div>
+                <div class="modal-row">
+                    <div class="f-group" style="flex:1;"><label id="f-price-label">販売金額 (円)</label><input type="number" id="f-price" placeholder="例: 5000"></div>
+                    <div class="f-group" style="flex:1;"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
+                </div>
+                <div class="f-group"><label>メモ (オーナー用)</label><input type="text" id="f-memo" placeholder="例: 仕入値3000円"></div>
             </div>
-            <div class="modal-row">
-                <div class="f-group" style="flex:1;"><label>レアリティ</label><input type="text" id="f-rarity" placeholder="例: UR, SAR"></div>
-                <div class="f-group" style="flex:1;"><label id="f-stock-label">在庫数</label><input type="number" id="f-stock" value="1" min="0"></div>
+
+            <!-- コピペ一括登録モード用の項目（新規追加時のみ） -->
+            <div id="bulk-fields" style="display:none;">
+                <div class="f-group">
+                    <label>📋 テキスト一括コピペ登録（1行に1件）</label>
+                    <textarea id="f-bulk-text" rows="6" placeholder="例:&#10;青眼の白龍, 1, 5000&#10;真紅眼の黒竜, 2, 3000&#10;（カード名, 商品番号, 金額 の順にカンマ区切り）"></textarea>
+                    <div style="font-size:0.65rem; color:var(--muted); margin-top:4px;">※「カード名, 商品番号, 金額」のようにカンマ区切りで複数行ペーストすると一括登録できます。</div>
+                </div>
             </div>
-            <div class="modal-row">
-                <div class="f-group" style="flex:1;"><label id="f-price-label">販売金額 (円)</label><input type="number" id="f-price" placeholder="例: 5000"></div>
-                <div class="f-group" style="flex:1;"><label>コンディション</label><input type="text" id="f-condition" placeholder="例: 美品(NM)"></div>
+
+            <div style="margin-top:6px; margin-bottom:6px;" id="mode-switch-container">
+                <button type="button" class="btn" style="background:#475569; font-size:0.65rem; width:100%; padding:4px;" onclick="toggleBulkMode()" id="bulk-mode-btn">📋 コピペ一括登録モードに切り替え</button>
             </div>
-            <div class="f-group"><label>メモ (オーナー用)</label><input type="text" id="f-memo" placeholder="仕入値や保管棚など"></div>
+
             <div class="modal-btns">
                 <button class="cancel-btn" onclick="closeModal()">キャンセル</button>
                 <button id="modal-save-btn" class="btn" onclick="saveData()">保存</button>
@@ -153,6 +171,7 @@
         let currentTab = 'sell'; // 'sell' or 'buy'
         let isOwner = sessionStorage.getItem('tcg_owner_session') === 'true';
         let sellCards = [], buyCards = [], currentZoomScale = 1, db;
+        let isBulkMode = false;
 
         const request = indexedDB.open('TCGUnifiedDB', 2);
         request.onsuccess = e => { db = e.target.result; loadAllData(); };
@@ -201,6 +220,14 @@
             }
             init();
         }
+
+        function toggleBulkMode() {
+            isBulkMode = !isBulkMode;
+            document.getElementById('single-fields').style.display = isBulkMode ? 'none' : 'block';
+            document.getElementById('bulk-fields').style.display = isBulkMode ? 'block' : 'none';
+            document.getElementById('bulk-mode-btn').textContent = isBulkMode ? '通常入力モードに戻す' : '📋 コピペ一括登録モードに切り替え';
+            document.getElementById('modal-title').textContent = isBulkMode ? '一括コピペ登録' : 'カード追加';
+        }
         function render() {
             const keyword = document.getElementById('search-input').value.toLowerCase();
             const filterTitle = document.getElementById('filter-title').value;
@@ -210,12 +237,15 @@
             let activeCards = currentTab === 'sell' ? sellCards : buyCards;
 
             let filtered = activeCards.filter(c => {
-                const matchKey = (c.name + (c.itemNo||'') + (c.no||'') + (c.rarity||'') + (c.condition||'') + (c.memo||'') + c.title).toLowerCase().includes(keyword);
-                return matchKey && (filterTitle === '' || c.title === filterTitle);
+                const searchTarget = (c.name + ' ' + (c.itemNo||'') + ' ' + (c.no||'') + ' ' + (c.rarity||'') + ' ' + (c.condition||'') + ' ' + (c.memo||'') + ' ' + c.title).toLowerCase();
+                return searchTarget.includes(keyword) && (filterTitle === '' || c.title === filterTitle);
             });
 
             filtered.sort((a, b) => {
-                if (sortOrder === 'itemno-asc') return (a.itemNo || '').localeCompare(b.itemNo || '', 'ja', { numeric: true });
+                if (sortOrder === 'itemno-asc') {
+                    // 数字やアルファベットを綺麗に比較するロジック
+                    return (a.itemNo || '').localeCompare(b.itemNo || '', 'ja', { numeric: true, sensitivity: 'base' });
+                }
                 if (sortOrder === 'price-desc') return (Number(b.price)||0) - (Number(a.price)||0);
                 if (sortOrder === 'price-asc') return (Number(a.price)||0) - (Number(b.price)||0);
                 if (sortOrder === 'stock-desc') return (Number(b.stock)||0) - (Number(a.stock)||0);
@@ -282,6 +312,12 @@
 
         function openModal(id = null) {
             document.getElementById('edit-id').value = id || '';
+            isBulkMode = false;
+            document.getElementById('single-fields').style.display = 'block';
+            document.getElementById('bulk-fields').style.display = 'none';
+            document.getElementById('mode-switch-container').style.display = id ? 'none' : 'block'; // 編集時は一括非表示
+            document.getElementById('bulk-mode-btn').textContent = '📋 コピペ一括登録モードに切り替え';
+
             const activeCards = currentTab === 'sell' ? sellCards : buyCards;
             document.getElementById('modal-title').textContent = (currentTab === 'sell' ? '販売カード' : '買取カード') + (id ? '編集' : '追加');
             document.getElementById('f-stock-label').textContent = currentTab === 'sell' ? '在庫数' : '募集数 (枚数)';
@@ -301,6 +337,7 @@
                 document.getElementById('f-rarity').value = ''; document.getElementById('f-price').value = '';
                 document.getElementById('f-stock').value = '1'; document.getElementById('f-condition').value = '';
                 document.getElementById('f-memo').value = ''; document.getElementById('f-img').value = '';
+                document.getElementById('f-bulk-text').value = '';
             }
             document.getElementById('item-modal').style.display = 'flex';
         }
@@ -308,14 +345,42 @@
         function closeModal() { document.getElementById('item-modal').style.display = 'none'; }
 
         function saveData() {
+            const storeName = currentTab === 'sell' ? 'sellCards' : 'buyCards';
+            const activeCards = currentTab === 'sell' ? sellCards : buyCards;
+
+            // コピペ一括登録モードの場合
+            if (isBulkMode) {
+                const bulkText = document.getElementById('f-bulk-text').value.trim();
+                if (!bulkText) { alert('テキストを入力してください'); return; }
+                const lines = bulkText.split('\n');
+                const defaultTitle = document.getElementById('f-title').value;
+                let count = 0;
+
+                lines.forEach((line, idx) => {
+                    const parts = line.split(',').map(s => s.trim());
+                    if (parts.length > 0 && parts[0]) {
+                        const name = parts[0];
+                        const itemNo = parts[1] || String(Date.now() + idx);
+                        const price = parts[2] || '';
+                        const cardId = Date.now() + idx;
+                        const cardData = { id: cardId, title: defaultTitle, name, itemNo, no: '', rarity: '', price, stock: 1, condition: '', memo: '', imgs: [] };
+                        db.transaction([storeName], 'readwrite').objectStore(storeName).put(cardData);
+                        count++;
+                    }
+                });
+                closeModal();
+                loadAllData();
+                alert(`${count件のカードを一括登録しました！`);
+                return;
+            }
+
+            // 通常保存モード
             const idVal = document.getElementById('edit-id').value, title = document.getElementById('f-title').value, name = document.getElementById('f-name').value;
             const itemNo = document.getElementById('f-itemno').value, no = document.getElementById('f-no').value, rarity = document.getElementById('f-rarity').value;
             const price = document.getElementById('f-price').value, stock = document.getElementById('f-stock').value, condition = document.getElementById('f-condition').value;
             const memo = document.getElementById('f-memo').value, imgInput = document.getElementById('f-img');
             
             if (!name) { alert('カード名を入力してください'); return; }
-            const storeName = currentTab === 'sell' ? 'sellCards' : 'buyCards';
-            const activeCards = currentTab === 'sell' ? sellCards : buyCards;
             const files = Array.from(imgInput.files).slice(0, 10), cardId = idVal ? Number(idVal) : Date.now();
 
             if (idVal) {
